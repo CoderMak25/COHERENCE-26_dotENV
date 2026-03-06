@@ -131,25 +131,15 @@ export default function Logs() {
                 </div>
             </div>
 
-            {/* METRICS BAR */}
-            <div className="flex gap-4 mb-5 flex-shrink-0">
-                <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col">
-                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">TOTAL LOGS</span>
-                    <span className="font-syne text-2xl font-bold text-[var(--text-primary)] leading-none">{pagination?.total || 0}</span>
-                </div>
-                <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col">
-                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">PAGE LIMIT</span>
-                    <span className="font-syne text-2xl font-bold text-[var(--success)] leading-none">{pagination?.limit || 50}</span>
-                </div>
-                <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col">
-                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">CURRENT PAGE</span>
-                    <span className="font-syne text-2xl font-bold text-[var(--text-primary)] leading-none">{page}</span>
-                </div>
-                <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col items-center justify-center">
-                    <div className="flex gap-2">
-                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] disabled:opacity-50">‹</button>
-                        <button onClick={() => setPage(p => Math.min(pagination?.pages || 1, p + 1))} disabled={!pagination?.pages || page >= pagination.pages} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] disabled:opacity-50">›</button>
-                    </div>
+            {/* COMPACT PAGINATION */}
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest">
+                    SHOWING {((page - 1) * (pagination?.limit || 50)) + 1}–{Math.min(page * (pagination?.limit || 50), pagination?.total || 0)} OF {pagination?.total || 0} LOGS
+                </span>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] disabled:opacity-50">‹</button>
+                    <span className="text-[11px] font-bold text-[var(--text-primary)] px-2">PAGE {page} / {pagination?.pages || 1}</span>
+                    <button onClick={() => setPage(p => Math.min(pagination?.pages || 1, p + 1))} disabled={!pagination?.pages || page >= pagination.pages} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] disabled:opacity-50">›</button>
                 </div>
             </div>
 

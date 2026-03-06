@@ -15,6 +15,12 @@ const seedAll = async () => {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('Connected to MongoDB');
 
+        // Drop unique index on email if exists
+        try {
+            await mongoose.connection.collection('leads').dropIndex('email_1');
+            console.log('Dropped email unique index');
+        } catch (e) { /* index may not exist */ }
+
         // --- SEED LEADS from leads.csv ---
         const csvPath = path.join(__dirname, '../../../leads.csv');
         const csvContent = fs.readFileSync(csvPath, 'utf-8');
@@ -27,15 +33,20 @@ const seedAll = async () => {
             if (values.length < 2) continue;
             const row = {};
             headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
-            if (!row.Name || !row.Email) continue; // skip rows without name or email
+            if (!row.Name || !row.Email) continue;
             leadRows.push(row);
         }
 
         await Lead.deleteMany({});
         console.log('Cleared existing leads');
 
-        const statuses = ['New', 'Contacted', 'Opened', 'Replied', 'Converted'];
-        const workflows = ['Q1 Outbound', 'Enterprise', null, null];
+        const statuses = ['New', 'Contacted', 'Contacted', 'Opened', 'Replied', 'Converted', 'Contacted', 'New', 'Replied'];
+        const workflows = ['Q1 Outbound', 'Enterprise', null, 'Q1 Outbound', 'Enterprise', null];
+        const lastActions = [
+            'Initial Email Sent', 'Follow-up Delivered', 'Email Opened',
+            'Reply Received', 'Meeting Scheduled', 'Deal Closed',
+            'LinkedIn Message Sent', 'Email Bounced', null
+        ];
 
         const leadsToInsert = leadRows.map((row, i) => ({
             name: row.Name,
@@ -45,7 +56,7 @@ const seedAll = async () => {
             tags: [row.Industry, row.Location].filter(Boolean),
             status: statuses[i % statuses.length],
             workflow: workflows[i % workflows.length],
-            lastAction: i % 3 === 0 ? 'Sent Initial Email' : i % 3 === 1 ? 'Follow-up Sent' : null,
+            lastAction: lastActions[i % lastActions.length],
             metadata: new Map([
                 ['linkedin', row.LinkedIn || ''],
                 ['industry', row.Industry || ''],
@@ -56,31 +67,36 @@ const seedAll = async () => {
         await Lead.insertMany(leadsToInsert);
         console.log(`Seeded ${leadsToInsert.length} leads`);
 
-        // --- SEED LOGS ---
+        // --- SEED LOGS with distributed timestamps ---
         await Log.deleteMany({});
         console.log('Cleared existing logs');
 
         const allLeads = await Lead.find({});
-        const logStatuses = ['SENT', 'FAILED', 'PENDING', 'SKIPPED', 'OK'];
+        const logStatuses = ['SENT', 'SENT', 'SENT', 'FAILED', 'PENDING', 'SKIPPED', 'OK', 'OK'];
         const actions = [
-            'Sent Initial Email',
-            'Follow-up Email',
-            'LinkedIn Connection Request',
-            'Started Workflow Q1 Outbound',
-            'Email Opened',
-            'Profile Viewed'
+            'EMAIL_SENT', 'EMAIL_SENT', 'FOLLOW_UP_SENT',
+            'WORKFLOW_START', 'EMAIL_OPENED', 'LINKEDIN_DM',
+            'EMAIL_FAILED', 'CONDITION_CHECK', 'REPLY_RECEIVED'
         ];
 
         const logsToInsert = [];
+        const now = Date.now();
 
+        // Create logs spread evenly across last 7 days for good chart data
         for (const lead of allLeads) {
-            const numLogs = Math.floor(Math.random() * 5) + 2;
+            const numLogs = Math.floor(Math.random() * 6) + 3;
             for (let i = 0; i < numLogs; i++) {
                 const status = logStatuses[Math.floor(Math.random() * logStatuses.length)];
                 let detail = 'Processed successfully';
-                if (status === 'FAILED') detail = 'SMTP timeout — recipient server rejected connection';
-                if (status === 'SKIPPED') detail = 'Rate limit reached, will retry later';
-                if (status === 'PENDING') detail = 'Queued for delivery';
+                if (status === 'FAILED') detail = 'SMTP timeout — connection rejected';
+                if (status === 'SKIPPED') detail = 'Rate limit reached, queued for retry';
+                if (status === 'PENDING') detail = 'Waiting in send queue';
+
+                // Spread logs across 7 days — each day gets roughly equal logs
+                const dayOffset = Math.floor(Math.random() * 7);
+                const hourOffset = Math.floor(Math.random() * 24);
+                const minOffset = Math.floor(Math.random() * 60);
+                const timestamp = new Date(now - dayOffset * 24 * 60 * 60 * 1000 - hourOffset * 60 * 60 * 1000 - minOffset * 60 * 1000);
 
                 logsToInsert.push({
                     leadId: lead._id,
@@ -89,27 +105,28 @@ const seedAll = async () => {
                     status,
                     detail,
                     latencyMs: Math.floor(Math.random() * 500) + 10,
-                    createdAt: new Date(Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000))
+                    createdAt: timestamp
                 });
             }
         }
 
         // System-level logs
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 20; i++) {
+            const dayOffset = Math.floor(Math.random() * 7);
             logsToInsert.push({
                 leadName: 'SYSTEM',
-                action: 'Batch Sync',
+                action: 'BATCH_SYNC',
                 status: 'OK',
                 detail: `Synced ${Math.floor(Math.random() * 100)} records`,
                 latencyMs: Math.floor(Math.random() * 200) + 50,
-                createdAt: new Date(Date.now() - Math.floor(Math.random() * 3 * 24 * 60 * 60 * 1000))
+                createdAt: new Date(now - dayOffset * 24 * 60 * 60 * 1000 - Math.floor(Math.random() * 12) * 60 * 60 * 1000)
             });
         }
 
         await Log.insertMany(logsToInsert);
         console.log(`Seeded ${logsToInsert.length} logs`);
 
-        // --- Export seed.json for MongoDB Compass ---
+        // --- Export seed.json ---
         const seedJsonPath = path.join(__dirname, '../../../seed.json');
         const allLeadsExport = await Lead.find({}).lean();
         const allLogsExport = await Log.find({}).lean();

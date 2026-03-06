@@ -10,6 +10,9 @@ export default function Leads() {
     const [selectAll, setSelectAll] = useState(false)
     const [selectedIds, setSelectedIds] = useState([])
     const [page, setPage] = useState(1)
+    const [showCreate, setShowCreate] = useState(false)
+    const [createForm, setCreateForm] = useState({ name: '', email: '', company: '', position: '', status: 'New' })
+    const [creating, setCreating] = useState(false)
 
     const { leads = [], loading, error, pagination, refetch } = useLeads({
         search, status: statusFilter, workflow: workflowFilter, page
@@ -17,6 +20,32 @@ export default function Leads() {
 
     // Reset pagination to 1 when filters change
     useEffect(() => { setPage(1) }, [search, statusFilter, workflowFilter])
+
+    const handleCreate = async (e) => {
+        e.preventDefault()
+        if (!createForm.name || !createForm.email) return alert('Name and Email are required')
+        try {
+            setCreating(true)
+            await leadsAPI.create(createForm)
+            setShowCreate(false)
+            setCreateForm({ name: '', email: '', company: '', position: '', status: 'New' })
+            refetch()
+        } catch (err) {
+            alert('Create failed: ' + (err.error || err.message || JSON.stringify(err)))
+        } finally {
+            setCreating(false)
+        }
+    }
+
+    const handleDelete = async (lead) => {
+        if (!confirm('Delete lead ' + lead.name + '?')) return
+        try {
+            await leadsAPI.remove(lead._id)
+            refetch()
+        } catch (err) {
+            alert('Delete failed: ' + (err.error || err.message || err))
+        }
+    }
 
     const handleImport = async (e) => {
         const file = e.target.files[0]
@@ -56,7 +85,7 @@ export default function Leads() {
             case 'Contacted': return { class: 'badge-success', label: 'ACTIVE' }
             case 'Replied': return { class: 'badge-accent', label: 'REPLIED' }
             case 'New': return { class: 'badge-warning', label: 'PENDING' }
-            case 'Converted': return { class: 'badge-cold', label: 'COLD' }
+            case 'Converted': return { class: 'badge-cold', label: 'CONVERTED' }
             case 'Opened': return { class: 'badge-success', label: 'OPENED' }
             default: return { class: 'badge-cold', label: status?.toUpperCase() || 'NEW' }
         }
@@ -82,15 +111,44 @@ export default function Leads() {
             <div className="flex justify-between items-center flex-shrink-0">
                 <h2 className="font-syne text-2xl font-bold uppercase tracking-tight text-[var(--text-primary)]">LEADS DATABASE</h2>
                 <div className="flex gap-4">
+                    <button onClick={() => setShowCreate(true)} className="btn-base btn-accent">
+                        <Icon icon="solar:add-circle-bold" className="mr-1 text-xs" /> CREATE
+                    </button>
                     <button onClick={handleExport} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
                         EXPORT
                     </button>
-                    <label className="btn-base btn-accent cursor-pointer flex items-center justify-center m-0">
+                    <label className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] cursor-pointer flex items-center justify-center m-0">
                         IMPORT CSV
                         <input type="file" className="hidden" accept=".csv,.xlsx" onChange={handleImport} />
                     </label>
                 </div>
             </div>
+
+            {/* CREATE LEAD MODAL */}
+            {showCreate && (
+                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center" onClick={() => setShowCreate(false)}>
+                    <div className="brutalist-card p-6 w-[420px] max-w-[90vw]" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-[13px] font-bold text-[var(--text-primary)] uppercase tracking-widest mb-4">CREATE NEW LEAD</h3>
+                        <form onSubmit={handleCreate} className="flex flex-col gap-3">
+                            <input type="text" placeholder="FULL NAME *" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} className="h-[40px] px-3 text-[11px] font-bold" required />
+                            <input type="email" placeholder="EMAIL *" value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} className="h-[40px] px-3 text-[11px] font-bold" required />
+                            <input type="text" placeholder="COMPANY" value={createForm.company} onChange={e => setCreateForm(f => ({ ...f, company: e.target.value }))} className="h-[40px] px-3 text-[11px] font-bold" />
+                            <input type="text" placeholder="ROLE / POSITION" value={createForm.position} onChange={e => setCreateForm(f => ({ ...f, position: e.target.value }))} className="h-[40px] px-3 text-[11px] font-bold" />
+                            <select value={createForm.status} onChange={e => setCreateForm(f => ({ ...f, status: e.target.value }))} className="h-[40px] px-3 text-[11px] font-bold">
+                                <option value="New">New</option>
+                                <option value="Contacted">Contacted</option>
+                                <option value="Opened">Opened</option>
+                                <option value="Replied">Replied</option>
+                                <option value="Converted">Converted</option>
+                            </select>
+                            <div className="flex gap-3 mt-2">
+                                <button type="submit" disabled={creating} className="btn-base btn-accent flex-1">{creating ? 'CREATING...' : 'CREATE LEAD'}</button>
+                                <button type="button" onClick={() => setShowCreate(false)} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] flex-1">CANCEL</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* FILTER BAR */}
             <div className="flex gap-4 my-6 flex-shrink-0">
@@ -111,9 +169,11 @@ export default function Leads() {
                         onChange={(e) => setStatusFilter(e.target.value)}
                     >
                         <option value="ALL">STATUS: ALL</option>
-                        <option value="Contacted">ACTIVE</option>
-                        <option value="New">PENDING</option>
-                        <option value="Converted">COLD</option>
+                        <option value="New">NEW</option>
+                        <option value="Contacted">CONTACTED</option>
+                        <option value="Opened">OPENED</option>
+                        <option value="Replied">REPLIED</option>
+                        <option value="Converted">CONVERTED</option>
                     </select>
                     <Icon icon="solar:alt-arrow-down-linear" className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]" />
                 </div>
@@ -158,7 +218,7 @@ export default function Leads() {
                         )}
                         {!loading && leads.length === 0 && (
                             <tr>
-                                <td colSpan="10" className="p-[20px] text-center text-[var(--text-muted)]">No leads found. Please import data.</td>
+                                <td colSpan="10" className="p-[20px] text-center text-[var(--text-muted)]">No leads found. Click CREATE to add one.</td>
                             </tr>
                         )}
                         {!loading && leads.map((lead, index) => {
@@ -182,10 +242,7 @@ export default function Leads() {
                                     <td className={`p-[12px_16px] ${lead.workflow ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>{lead.workflow || '—'}</td>
                                     <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.lastAction || 'No Actions Yet'}</td>
                                     <td className="p-[12px_16px] flex gap-2 justify-center">
-                                        <button onClick={() => alert('Starting workflow for ' + lead.name)} className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
-                                            <Icon icon="solar:play-bold" />
-                                        </button>
-                                        <button onClick={() => confirm('Delete lead ' + lead.name + '?') && leadsAPI.remove(lead._id).then(refetch)} className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
+                                        <button onClick={() => handleDelete(lead)} className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
                                             <Icon icon="solar:trash-bin-trash-bold" />
                                         </button>
                                     </td>
