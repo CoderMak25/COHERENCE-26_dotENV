@@ -7,7 +7,7 @@ export default function FloatingToolbar() {
         undo, history, historyIndex,
         saveWorkflow, loadWorkflow,
         toggleLog, showLog,
-        running, runBackendWorkflow,
+        running, runBackendWorkflow, stopWorkflow,
         nodes,
     } = useWorkflowStore()
 
@@ -49,17 +49,23 @@ export default function FloatingToolbar() {
             <button className={`wf-tb-btn ${showLog ? 'wf-tb-active' : ''}`} title="Toggle Log" onClick={toggleLog}>◫</button>
             <button className="wf-tb-btn wf-tb-danger" title="Clear Canvas" onClick={handleClear}>✕</button>
             <div className="wf-tb-sep" />
-            <button
-                className={`wf-tb-run ${running ? 'wf-running' : ''}`}
-                onClick={() => { if (!running) runBackendWorkflow() }}
-                disabled={running || nodes.length === 0}
-            >
-                {running ? (
-                    <><span className="wf-spinner">↻</span> RUNNING</>
-                ) : (
-                    <>▶ RUN</>
-                )}
-            </button>
+            {running ? (
+                <button
+                    className="wf-tb-run wf-running"
+                    onClick={stopWorkflow}
+                    title="Stop Execution"
+                >
+                    <span className="wf-spinner">↻</span> STOP
+                </button>
+            ) : (
+                <button
+                    className="wf-tb-run"
+                    onClick={runBackendWorkflow}
+                    disabled={nodes.length === 0}
+                >
+                    ▶ RUN
+                </button>
+            )}
         </div>
     )
 }

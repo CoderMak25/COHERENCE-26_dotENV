@@ -53,175 +53,105 @@ const logAction = async (lead, step, channel, direction, subject, body, status =
 
 
 // ═══════════════════════════════════════════════════════
-//  OUTREACH WORKFLOW ENGINE — called when user clicks RUN
+//  SIMPLE WORKFLOW: Trigger → AI Write Email → Send → End
+//  SSE version — streams events to frontend in real-time
 // ═══════════════════════════════════════════════════════
 
-export const runOutreachWorkflow = async () => {
-    const results = {
-        total: 0,
-        initial_sent: 0,
-        follow_up_sent: 0,
-        final_reminder_sent: 0,
-        skipped_no_contact: 0,
-        skipped_bounced: 0,
-        skipped_too_soon: 0,
-        already_done: 0,
-        errors: [],
-    }
+export const runOutreachWorkflowSSE = async (send, isAborted) => {
+    let sent = 0, failed = 0, skipped = 0
 
-    // Query all leads in actionable states
-    const leads = await Lead.find({
-        status: { $nin: ['completed', 'invalid_no_contact', 'email_bounced', 'needs_human', 'manual_conversation'] },
-        humanTakeover: { $ne: true },
-    })
+    // STEP 1: TRIGGER — Fetch ALL leads from MongoDB
+    const leads = await Lead.find({})
+    send('log', { tag: 'TRG', message: `Trigger fired — found ${leads.length} leads in database` })
 
-    results.total = leads.length
+    for (let i = 0; i < leads.length; i++) {
+        // Check if user pressed STOP
+        if (isAborted()) {
+            send('log', { tag: 'SYS', message: `Stopped by user after ${sent} emails sent` })
+            break
+        }
 
-    for (const lead of leads) {
+        const lead = leads[i]
+
+        // Skip leads without email
+        if (!lead.email) {
+            skipped++
+            send('log', { tag: '--', message: `Skipped ${lead.name} — no email address` })
+            continue
+        }
+
+        const firstName = (lead.name || 'there').split(' ')[0]
+        send('log', { tag: 'AI', message: `[${i + 1}/${leads.length}] Writing AI email for ${lead.name}...` })
+
         try {
-            await processLead(lead, results)
-            // Human-like delay between leads (1-3 seconds)
-            await new Promise(r => setTimeout(r, randInt(1000, 3000)))
-        } catch (err) {
-            results.errors.push({
-                leadId: lead._id.toString(),
-                name: lead.name,
-                error: err.message,
+            // STEP 2: AI WRITE EMAIL — Groq generates personalized message
+            const aiBody = await generateOutreachMessage('initial_outreach', {
+                name: lead.name || 'there',
+                company: lead.company || '',
+                position: lead.position || '',
+                industry: lead.industry || '',
             })
-        }
-    }
 
-    return results
-}
+            const subject = lead.company
+                ? `Quick intro — ${lead.company}`
+                : `Hey ${firstName}, quick thought`
 
+            // STEP 3: SEND INTRO EMAIL — Gmail SMTP
+            send('log', { tag: 'OUT', message: `[${i + 1}/${leads.length}] Sending to ${lead.email}...` })
 
-// ── Process a single lead ──
-const processLead = async (lead, results) => {
+            const emailResult = await sendEmail({
+                to: lead.email,
+                subject,
+                body: aiBody,
+            })
 
-    // 1. Validate & route
-    const channel = validateAndRoute(lead)
-    lead.channel = channel
-    await lead.save()
+            if (emailResult.success) {
+                await Lead.updateOne({ _id: lead._id }, {
+                    $set: {
+                        status: 'Contacted',
+                        lastContactedAt: new Date(),
+                        lastContact: new Date(),
+                        gmailThreadSubject: subject,
+                    }
+                })
 
-    if (channel === 'none') {
-        lead.status = 'invalid_no_contact'
-        lead.contactStatus = 'invalid_no_contact'
-        await lead.save()
-        results.skipped_no_contact++
-        return
-    }
+                await Log.create({
+                    leadId: lead._id,
+                    leadName: lead.name,
+                    action: 'EMAIL_SENT',
+                    status: 'SENT',
+                    detail: `To: ${lead.email} | Subject: ${subject}`,
+                    step: 'initial_outreach',
+                    channel: 'email',
+                    direction: 'sent',
+                    subject,
+                    body: aiBody,
+                    latencyMs: emailResult.latencyMs,
+                })
 
-    // 2. Skip already-bounced
-    if (['email_bounced', 'linkedin_failed'].includes(lead.contactStatus)) {
-        results.skipped_bounced++
-        return
-    }
-
-    // 3. Skip paused
-    if (lead.status === 'paused') {
-        results.skipped_too_soon++
-        return
-    }
-
-    // 4. Determine next step
-    const sentLogs = await Log.find({ leadId: lead._id, direction: 'sent' }).sort({ createdAt: 1 })
-    const sentSteps = sentLogs.map(l => l.step).filter(Boolean)
-
-    let step
-    if (!sentSteps.includes('initial_outreach')) {
-        step = 'initial_outreach'
-    } else if (!sentSteps.includes('follow_up')) {
-        const days = daysSince(lead.lastContactedAt)
-        const minWait = randInt(...FOLLOW_UP_DELAY_DAYS)
-        if (days < minWait) {
-            results.skipped_too_soon++
-            return
-        }
-        step = 'follow_up'
-    } else if (!sentSteps.includes('final_reminder')) {
-        const days = daysSince(lead.lastContactedAt)
-        const minWait = randInt(...FINAL_REMINDER_DELAY_DAYS)
-        if (days < minWait) {
-            results.skipped_too_soon++
-            return
-        }
-        step = 'final_reminder'
-    } else {
-        // All steps sent — mark completed
-        if (!['replied', 'needs_human', 'manual_conversation'].includes(lead.status)) {
-            lead.status = 'completed'
-            await lead.save()
-        }
-        results.already_done++
-        return
-    }
-
-    // 5. Generate AI message
-    const leadData = {
-        name: lead.name || 'there',
-        company: lead.company || '',
-        position: lead.position || '',
-        industry: lead.industry || '',
-    }
-    const body = await generateOutreachMessage(step, leadData)
-    const subject = getSubject(step, lead)
-
-    // 6. Send
-    if (['email', 'both'].includes(channel)) {
-        const result = await sendEmail({
-            to: lead.email,
-            subject,
-            body,
-        })
-
-        if (!result.success) {
-            // Check if bounce
-            const isBounce = (result.error || '').toLowerCase().includes('refused') ||
-                (result.error || '').toLowerCase().includes('bounce')
-
-            if (isBounce) {
-                lead.contactStatus = 'email_bounced'
-                lead.status = 'email_bounced'
-                await lead.save()
-                await logAction(lead, step, 'email', 'sent', subject, body, 'BOUNCED', result.error)
-                results.skipped_bounced++
-
-                // Fallback to LinkedIn if available
-                if (lead.linkedinUrl && lead.linkedinUrl.toLowerCase().includes('linkedin.com')) {
-                    lead.channel = 'linkedin'
-                    lead.status = 'contacted'
-                    await lead.save()
-                    await logAction(lead, step, 'linkedin', 'sent', subject, `[LinkedIn fallback — email bounced]\n\n${body}`)
-                }
+                sent++
+                send('log', { tag: 'OUT', message: `Email sent to ${lead.name} (${lead.email}) — ${emailResult.latencyMs}ms` })
             } else {
-                await logAction(lead, step, 'email', 'sent', subject, body, 'FAILED', result.error)
+                failed++
+                send('log', { tag: 'ERR', message: `Failed: ${lead.name} (${lead.email}) — ${emailResult.error}` })
             }
-            return
+
+            // Send progress update
+            send('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
+
+            // Small delay between emails (1-2 seconds)
+            await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000))
+
+        } catch (err) {
+            failed++
+            send('log', { tag: 'ERR', message: `Error: ${lead.name} — ${err.message}` })
+            send('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
         }
-
-        // Success
-        if (!lead.gmailThreadSubject) {
-            lead.gmailThreadSubject = subject
-        }
-        lead.lastContactedAt = new Date()
-        lead.status = step === 'initial_outreach' ? 'contacted'
-            : step === 'follow_up' ? 'follow_up_sent'
-                : 'final_reminder_sent'
-        await lead.save()
-        await logAction(lead, step, 'email', 'sent', subject, body)
-
-        if (step === 'initial_outreach') results.initial_sent++
-        else if (step === 'follow_up') results.follow_up_sent++
-        else results.final_reminder_sent++
-
-    } else if (channel === 'linkedin') {
-        // Log as LinkedIn attempt (actual send requires LinkedIn API)
-        await logAction(lead, step, 'linkedin', 'sent', subject, body)
-        lead.lastContactedAt = new Date()
-        lead.status = 'contacted'
-        await lead.save()
-        results.initial_sent++
     }
+
+    // STEP 4: END
+    send('log', { tag: 'END', message: `Complete — ${sent} emails sent, ${failed} failed, ${skipped} skipped` })
+    send('progress', { sent, failed, skipped, current: leads.length, total: leads.length })
 }
 
 

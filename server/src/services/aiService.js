@@ -1,17 +1,35 @@
-import { GoogleGenAI } from '@google/genai'
+import Groq from 'groq-sdk'
 
-let ai = null
+let client = null
 const getClient = () => {
-    if (!ai) {
-        ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    if (!client) {
+        client = new Groq({ apiKey: process.env.GROQ_API_KEY })
     }
-    return ai
+    return client
 }
+
+const MODEL = 'llama-3.1-8b-instant'
+
+// ── Helper: call Groq chat completions ──
+const chatComplete = async (systemPrompt, userPrompt) => {
+    const response = await getClient().chat.completions.create({
+        model: MODEL,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 512,
+    })
+    return response.choices[0]?.message?.content?.trim() || ''
+}
+
 
 // ── Existing: generate message for workflow nodes ──
 export const generateMessage = async (lead, nodeType = 'email') => {
-    const prompt = `
-You are an expert B2B sales copywriter.
+    const systemPrompt = 'You are an expert B2B sales copywriter. Respond ONLY with valid JSON, no markdown, no code fences.'
+
+    const userPrompt = `
 Write a highly personalized cold outreach ${nodeType} for this lead:
   Name: ${lead.name}
   Title: ${lead.position}
@@ -26,17 +44,13 @@ Rules:
 - End with ONE low-friction CTA question
 - No generic phrases like "I hope this finds you well"
 
-Respond ONLY with valid JSON, no markdown, no code fences:
+Respond ONLY with valid JSON:
 {"subject": "...", "body": "...", "personalizationScore": 0-100}
 `
 
-    const response = await getClient().models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: prompt
-    })
-
-    const text = response.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    return JSON.parse(text)
+    const text = await chatComplete(systemPrompt, userPrompt)
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    return JSON.parse(cleaned)
 }
 
 
@@ -128,12 +142,8 @@ export const generateOutreachMessage = async (step, leadData) => {
         throw new Error(`Unknown outreach step: ${step}`)
     }
 
-    const prompt = promptFn(leadData)
+    const userPrompt = promptFn(leadData)
+    const systemPrompt = 'You are a professional sales outreach assistant. Write concise, personalized messages. Output only the message body, nothing else.'
 
-    const response = await getClient().models.generateContent({
-        model: 'gemini-2.0-flash',
-        contents: prompt
-    })
-
-    return response.text.trim()
+    return await chatComplete(systemPrompt, userPrompt)
 }
