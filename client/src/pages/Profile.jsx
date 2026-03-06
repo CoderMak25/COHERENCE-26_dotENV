@@ -98,8 +98,8 @@ export default function Profile() {
             <div className="brutalist-card p-6 mb-5 flex items-start gap-6">
                 {/* Avatar */}
                 <div className="flex flex-col items-center gap-3 flex-shrink-0">
-                    <div className="w-[96px] h-[96px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[5px_5px_0_#0D0D0D] flex items-center justify-center">
-                        <span className="font-syne text-4xl font-bold text-[#0D0D0D]">OP</span>
+                    <div className="w-[96px] h-[96px] bg-[var(--accent)] border-2 border-[var(--border-bright)] shadow-[5px_5px_0_var(--shadow-color)] flex items-center justify-center">
+                        <span className="font-syne text-4xl font-bold text-[var(--text-inverted)]">OP</span>
                     </div>
                     {isEditing && (
                         <button className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] px-[10px] animate-slide-down">
