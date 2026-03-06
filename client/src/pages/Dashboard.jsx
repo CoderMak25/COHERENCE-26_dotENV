@@ -76,11 +76,6 @@ export default function Dashboard() {
     const topLeads = stats?.topLeads || []
     const workflowCounts = stats?.workflowCounts || []
 
-    // Static chart data (user preference)
-    const barHeights = ['40%', '65%', '85%', '50%', '95%', '20%', '15%']
-    const barValues = [82, 130, 170, 100, 190, 40, 30]
-    const dayLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
-
     const statCards = [
         { label: 'TOTAL LEADS', value: totalLeads.toLocaleString(), icon: 'solar:users-group-two-rounded-linear', trend: `${p.new || 0} NEW`, trendUp: true, bottom: `${p.contacted || 0} CONTACTED`, link: '/app/leads' },
         { label: 'LOGS RECORDED', value: totalLogs.toLocaleString(), icon: 'solar:letter-linear', trend: `${logSent} SENT`, trendUp: true, bottom: `${logFailed} FAILED`, link: '/app/logs' },

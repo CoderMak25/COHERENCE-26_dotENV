@@ -2,7 +2,29 @@ import Bull from 'bull'
 
 const redisUrl = process.env.REDIS_URL
 
+<<<<<<< HEAD
 let outreachQueue = null
+=======
+// Configure Bull/ioredis so connection failures don't crash the app
+const bullOptions = redisUrl
+    ? {
+          redis: {
+              // Use Upstash TLS endpoint via REDIS_URL
+              url: redisUrl,
+              // Prevent MaxRetriesPerRequestError from crashing the process
+              maxRetriesPerRequest: null
+          }
+      }
+    : {
+          redis: {
+              host: 'localhost',
+              port: 6379,
+              maxRetriesPerRequest: null
+          }
+      }
+
+export const outreachQueue = new Bull('outreach', bullOptions)
+>>>>>>> 48925e81898f1b917118369c61819c8d193b9ce4
 
 if (redisUrl) {
     try {
