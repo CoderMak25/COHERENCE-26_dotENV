@@ -3,7 +3,7 @@ import * as wc from '../controllers/workflowController.js'
 
 const router = Router()
 
-router.get('/run', wc.runWorkflow)
+router.post('/run', wc.runWorkflow)
 router.get('/', wc.getWorkflows)
 router.get('/:id', wc.getOneWorkflow)
 router.post('/', wc.saveWorkflow)

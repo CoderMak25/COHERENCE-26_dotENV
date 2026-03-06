@@ -1,29 +1,44 @@
 import Workflow from '../models/Workflow.js'
 import { outreachQueue } from '../queues/outreachQueue.js'
-import { runOutreachWorkflowSSE } from '../services/executionEngine.js'
+import { runWorkflowGraphSSE } from '../services/executionEngine.js'
 
-// GET /api/workflows/run — SSE streaming endpoint for real-time execution
+// POST /api/workflows/run — SSE streaming, graph-driven execution
 export const runWorkflow = async (req, res, next) => {
-    // Set up SSE headers
-    res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-    })
+    // Parse workflow graph from request body
+    const workflow = req.body?.workflow
+
+    if (!workflow || !workflow.nodes || !workflow.nodes.length) {
+        return res.status(400).json({ error: 'No workflow graph provided. Send { workflow: { nodes, edges } }' })
+    }
+
+    if (!workflow.edges) workflow.edges = []
+
+    // Disable any compression for SSE — must stream unbuffered
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.setHeader('Connection', 'keep-alive')
+    res.setHeader('X-Accel-Buffering', 'no')  // nginx
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.status(200)
+    res.flushHeaders()
 
     const send = (event, data) => {
         res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        // Force flush — critical for real-time SSE
+        if (typeof res.flush === 'function') res.flush()
     }
 
-    // Handle client disconnect (STOP button)
+    // Handle client disconnect (STOP button) — use RES close, not REQ close
+    // req.on('close') fires when POST body ends, res.on('close') fires on actual disconnect
     let aborted = false
-    req.on('close', () => { aborted = true })
+    res.on('close', () => { aborted = true })
 
     try {
-        await runOutreachWorkflowSSE(send, () => aborted)
+        const leadIds = req.body?.leadIds || []
+        await runWorkflowGraphSSE(workflow, send, () => aborted, leadIds)
         send('done', { message: 'Workflow complete' })
     } catch (err) {
+        console.error('[WorkflowController] Error:', err)
         send('error', { message: err.message })
     }
 
