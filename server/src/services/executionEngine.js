@@ -219,6 +219,7 @@ async function executeNode(node, ctx, send) {
 
     // ── OUTREACH ──
     if (t === 'send_email') return await handleSendEmail(node, ctx, send)
+    if (t === 'send_telegram') return await handleSendTelegram(node, ctx, send)
     if (t === 'linkedin_dm') return handleLinkedIn(node, ctx, send)
     if (t === 'send_sms') return handlePassthrough(node, ctx, send, 'SMS')
     if (t === 'whatsapp') return handlePassthrough(node, ctx, send, 'WhatsApp')
@@ -379,6 +380,120 @@ async function handleSendEmail(node, ctx, send) {
         send('log', { tag: 'ERR', message: `✗ Email failed for ${lead.email}: ${result.error}` })
         return { port: 0 }
     }
+}
+
+
+// ── SEND TELEGRAM ────────────────────────────────────────────
+async function handleSendTelegram(node, ctx, send) {
+    const lead = ctx.lead
+    const config = node.config || {}
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+
+    if (!BOT_TOKEN) {
+        send('log', { tag: 'ERR', message: `✗ TELEGRAM_BOT_TOKEN not set in .env` })
+        return { port: 0 }
+    }
+
+    // Get AI message from context or generate fresh
+    let body = ctx.aiMessage
+    if (!body) {
+        const logs = await Log.find({ leadId: lead._id, direction: 'sent' })
+        const sentSteps = logs.map(l => l.step).filter(Boolean)
+
+        let pk = 'initial_outreach'
+        if (sentSteps.includes('initial_outreach')) pk = 'follow_up'
+        if (sentSteps.includes('follow_up')) pk = 'final_reminder'
+
+        body = await generateOutreachMessage(pk, {
+            name: lead.name || 'there',
+            company: lead.company || '',
+            position: lead.position || '',
+            industry: lead.industry || '',
+        })
+        ctx.promptKey = pk
+    }
+
+    // Read registered users from JSON bridge file (written by Python bot)
+    const { readFileSync, existsSync } = await import('fs')
+    const pathMod = await import('path')
+    const usersJsonPath = pathMod.resolve(process.cwd(), '..', 'telegram_bot', 'users.json')
+
+    let registeredUsers = []
+    try {
+        if (existsSync(usersJsonPath)) {
+            registeredUsers = JSON.parse(readFileSync(usersJsonPath, 'utf-8'))
+        }
+    } catch { /* empty */ }
+
+    // Resolve chat_id
+    const targetUsername = (config.username || lead.telegramUsername || '').toLowerCase().trim().replace(/^@/, '')
+
+    let chatId = null
+    if (targetUsername) {
+        const found = registeredUsers.find(u => u.username === targetUsername)
+        if (found) chatId = found.chat_id
+    }
+
+    if (!chatId && !config.sendToAll) {
+        send('log', { tag: 'ERR', message: `✗ @${targetUsername || '(empty)'} not found. They must message @OutreachXbot first.` })
+        return { port: 0 }
+    }
+
+    // Send via Telegram Bot API
+    const sendToChat = async (cid, msg) => {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: cid, text: msg, parse_mode: 'Markdown' }),
+        })
+        return await res.json()
+    }
+
+    send('log', { tag: 'TG', message: `Sending Telegram to ${chatId ? `@${targetUsername}` : 'all registered users'} for ${lead.name}...` })
+
+    let success = false
+    if (chatId) {
+        const result = await sendToChat(chatId, body)
+        success = result.ok
+        if (!success) {
+            send('log', { tag: 'ERR', message: `✗ Telegram failed: ${result.description || 'Unknown error'}` })
+        }
+    } else if (config.sendToAll) {
+        let sentCount = 0
+        for (const u of registeredUsers) {
+            const r = await sendToChat(u.chat_id, body)
+            if (r.ok) sentCount++
+        }
+        send('log', { tag: 'TG', message: `Sent to ${sentCount}/${registeredUsers.length} registered users` })
+        success = sentCount > 0
+    }
+
+    if (success) {
+        await Lead.updateOne({ _id: lead._id }, {
+            $set: {
+                status: 'Contacted',
+                lastContactedAt: new Date(),
+                lastContact: new Date(),
+            }
+        })
+
+        await Log.create({
+            leadId: lead._id,
+            leadName: lead.name,
+            action: 'TELEGRAM_SENT',
+            status: 'SENT',
+            detail: `Telegram → @${targetUsername || 'all users'}`,
+            step: ctx.promptKey || 'initial_outreach',
+            channel: 'telegram',
+            direction: 'sent',
+            body,
+        })
+
+        ctx.aiMessage = null
+        send('log', { tag: 'TG', message: `✓ Telegram sent for ${lead.name}` })
+    }
+
+    return { port: 0 }
 }
 
 

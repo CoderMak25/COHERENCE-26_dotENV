@@ -5,8 +5,8 @@
   "description": "OutreachOS Backend API",
   "main": "src/index.js",
   "scripts": {
-    "start": "node --env-file=.env src/index.js",
-    "dev": "nodemon --exec \"node --env-file=.env\" src/index.js"
+    "start": "node --env-file=../.env src/index.js",
+    "dev": "nodemon --exec \"node --env-file=../.env\" src/index.js"
   },
   "dependencies": {
     "@google/genai": "^1.0.0",
