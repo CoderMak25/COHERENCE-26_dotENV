@@ -8,6 +8,8 @@ import Campaigns from './pages/Campaigns'
 import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
 import WorkflowBuilder from './pages/workflow/WorkflowBuilder'
+import Settings from './pages/Settings'
+import Profile from './pages/Profile'
 
 export default function App() {
     return (
@@ -25,6 +27,8 @@ export default function App() {
                                 <Route path="/workflows" element={<WorkflowBuilder />} />
                                 <Route path="/analytics" element={<Analytics />} />
                                 <Route path="/logs" element={<Logs />} />
+                                <Route path="/settings" element={<Settings />} />
+                                <Route path="/profile" element={<Profile />} />
                             </Routes>
                         </div>
                     </main>

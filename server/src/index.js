@@ -1,8 +1,8 @@
+import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
-import dotenv from 'dotenv'
 import { connectDB } from './config/db.js'
 import leadsRouter from './routes/leads.js'
 import campaignsRouter from './routes/campaigns.js'
@@ -11,8 +11,6 @@ import aiRouter from './routes/ai.js'
 import logsRouter from './routes/logs.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import './queues/workers/outreachWorker.js'
-
-dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 5000

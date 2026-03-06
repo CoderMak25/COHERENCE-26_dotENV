@@ -1,0 +1,21 @@
+Name,Email,LinkedIn,Company,Role,Industry,Location
+John Carter,john.carter@example.com,https://linkedin.com/in/johncarter,Tesla,Electrical Engineer,Automotive,USA
+Sarah Lee,sarah.lee@example.com,https://linkedin.com/in/sarahlee,Google,Product Manager,Technology,USA
+Michael Brown,michael.brown@example.com,,Amazon,Data Analyst,E-commerce,USA
+Emily Davis,,https://linkedin.com/in/emilydavis,Microsoft,Software Engineer,Technology,USA
+David Wilson,david.wilson@example.com,https://linkedin.com/in/davidwilson,Meta,Backend Engineer,Technology,USA
+Sophia Martinez,sophia.martinez@example.com,,Netflix,Content Strategist,Entertainment,USA
+Daniel Anderson,,https://linkedin.com/in/danielanderson,IBM,Cloud Architect,Technology,USA
+Olivia Thomas,olivia.thomas@example.com,https://linkedin.com/in/oliviathomas,Adobe,UX Designer,Technology,USA
+James Taylor,james.taylor@example.com,,Oracle,Database Engineer,Technology,USA
+Isabella Moore,,https://linkedin.com/in/isabellamoore,Intel,Hardware Engineer,Semiconductors,USA
+William Jackson,william.jackson@example.com,https://linkedin.com/in/williamjackson,Apple,iOS Developer,Technology,USA
+Mia White,mia.white@example.com,,Spotify,Marketing Manager,Music,USA
+Benjamin Harris,ben.harris@example.com,https://linkedin.com/in/benharris,Salesforce,Sales Manager,SaaS,USA
+Charlotte Martin,,https://linkedin.com/in/charlottemartin,Uber,Operations Manager,Transportation,USA
+Lucas Thompson,lucas.thompson@example.com,,Airbnb,Business Analyst,Hospitality,USA
+Amelia Garcia,amelia.garcia@example.com,https://linkedin.com/in/ameliagarcia,Stripe,Fintech Engineer,Finance,USA
+Henry Clark,,https://linkedin.com/in/henryclark,Nvidia,AI Researcher,Semiconductors,USA
+Evelyn Rodriguez,evelyn.rodriguez@example.com,,PayPal,Security Engineer,Finance,USA
+Alexander Lewis,alex.lewis@example.com,https://linkedin.com/in/alexlewis,LinkedIn,Data Scientist,Technology,USA
+Harper Walker,,https://linkedin.com/in/harperwalker,Shopify,E-commerce Manager,E-commerce,USA
