@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react'
 import { Icon } from '@iconify/react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 
 const mainNavItems = [
-    { path: '/', label: 'DASHBOARD', icon: 'solar:widget-5-linear' },
-    { path: '/leads', label: 'LEADS', icon: 'solar:users-group-two-rounded-linear' },
-    { path: '/workflows', label: 'WORKFLOWS', icon: 'solar:branching-paths-down-linear' },
+    { path: '/app', label: 'DASHBOARD', icon: 'solar:widget-5-linear' },
+    { path: '/app/leads', label: 'LEADS', icon: 'solar:users-group-two-rounded-linear' },
+    { path: '/app/workflows', label: 'WORKFLOWS', icon: 'solar:branching-paths-down-linear' },
 ]
 
 const systemNavItems = [
-    { path: '/logs', label: 'LOGS', icon: 'solar:database-linear' },
-    { path: '/settings', label: 'SETTINGS', icon: 'solar:settings-linear' },
+    { path: '/app/logs', label: 'LOGS', icon: 'solar:database-linear' },
+    { path: '/app/settings', label: 'SETTINGS', icon: 'solar:settings-linear' },
 ]
 
 export default function Sidebar() {
     const location = useLocation()
+    const navigate = useNavigate()
+    const { logout } = useAuth()
     const [collapsed, setCollapsed] = useState(false)
 
     useEffect(() => {
@@ -121,6 +124,16 @@ export default function Sidebar() {
                     <span className="text-[11px] text-[var(--warning)] font-bold">THROTTLE: 10/HR</span>
                 </div>
             )}
+
+            {/* ─── LOGOUT ─── */}
+            <button
+                onClick={async () => { await logout(); navigate('/'); }}
+                className={`h-[38px] flex items-center ${collapsed ? 'justify-center' : 'px-4'} border-t border-[var(--border)] bg-[var(--bg-sidebar)] hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--danger)] transition-colors duration-150 group relative`}
+            >
+                <Icon icon="solar:logout-2-linear" className={`text-[16px] flex-shrink-0 ${collapsed ? '' : 'mr-3'}`} />
+                {!collapsed && <span className="text-[9px] uppercase tracking-[0.2em] font-bold">LOGOUT</span>}
+                {collapsed && <div className="sidebar-tooltip">LOGOUT</div>}
+            </button>
 
             {/* ─── COLLAPSE TOGGLE ─── */}
             <button

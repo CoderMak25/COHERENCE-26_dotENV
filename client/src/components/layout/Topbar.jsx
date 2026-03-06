@@ -4,13 +4,14 @@ import { useTheme } from '../../context/ThemeContext'
 import { useState, useEffect } from 'react'
 
 const titleMap = {
-    '/': 'DASHBOARD',
-    '/leads': 'LEADS',
-    '/campaigns': 'WORKFLOWS',
-    '/analytics': 'ANALYTICS',
-    '/logs': 'LOGS',
-    '/settings': 'SETTINGS',
-    '/profile': 'PROFILE',
+    '/app': 'DASHBOARD',
+    '/app/leads': 'LEADS',
+    '/app/campaigns': 'WORKFLOWS',
+    '/app/workflows': 'WORKFLOWS',
+    '/app/analytics': 'ANALYTICS',
+    '/app/logs': 'LOGS',
+    '/app/settings': 'SETTINGS',
+    '/app/profile': 'PROFILE',
 }
 
 export default function Topbar() {
@@ -57,7 +58,7 @@ export default function Topbar() {
                     <div className="theme-icon icon-moon"><Icon icon="solar:moon-bold" /></div>
                 </button>
 
-                <Link to="/profile" className="w-[30px] h-[30px] bg-[var(--bg-raised)] brutalist-panel flex items-center justify-center text-accent text-[11px] font-bold hover:-translate-y-[1px] transition-transform cursor-pointer">
+                <Link to="/app/profile" className="w-[30px] h-[30px] bg-[var(--bg-raised)] brutalist-panel flex items-center justify-center text-accent text-[11px] font-bold hover:-translate-y-[1px] transition-transform cursor-pointer">
                     OP
                 </Link>
             </div>
