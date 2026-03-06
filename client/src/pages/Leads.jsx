@@ -9,7 +9,7 @@ export default function Leads() {
     const [selectAll, setSelectAll] = useState(false)
     const [selectedIds, setSelectedIds] = useState([])
 
-    const { leads, loading, error } = useLeads()
+    const { leads, loading, error, pagination } = useLeads()
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -157,7 +157,9 @@ export default function Leads() {
 
             {/* PAGINATION */}
             <div className="mt-5 pt-4 flex items-center justify-between flex-shrink-0 border-t-2 border-[var(--border-bright)]">
-                <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest">SHOWING 1–25 OF 1,248 LEADS</span>
+                <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest">
+                    SHOWING {(pagination?.page - 1) * pagination?.limit + 1 || 0}–{Math.min((pagination?.page) * pagination?.limit, pagination?.total || 0) || 0} OF {pagination?.total || 0} LEADS
+                </span>
                 <div className="flex gap-2">
                     <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px]">‹</button>
                     <button className="h-[32px] w-[32px] page-btn active flex items-center justify-center transition-transform hover:-translate-y-[1px]">1</button>

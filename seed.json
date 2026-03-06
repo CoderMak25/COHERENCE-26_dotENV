@@ -1,0 +1,434 @@
+[
+  {
+    "_id": "69aab5871b1fa2371eb435e0",
+    "name": "John Carter",
+    "email": "john.carter@example.com",
+    "company": "Tesla",
+    "position": "Electrical Engineer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/johncarter",
+      "Industry": "Automotive",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.833Z",
+    "updatedAt": "2026-03-06T11:07:51.833Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e1",
+    "name": "Sarah Lee",
+    "email": "sarah.lee@example.com",
+    "company": "Google",
+    "position": "Product Manager",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/sarahlee",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e2",
+    "name": "Michael Brown",
+    "email": "michael.brown@example.com",
+    "company": "Amazon",
+    "position": "Data Analyst",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "",
+      "Industry": "E-commerce",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e3",
+    "name": "Emily Davis",
+    "email": "emily.davis@dummy.com",
+    "company": "Microsoft",
+    "position": "Software Engineer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/emilydavis",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e4",
+    "name": "David Wilson",
+    "email": "david.wilson@example.com",
+    "company": "Meta",
+    "position": "Backend Engineer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/davidwilson",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e5",
+    "name": "Sophia Martinez",
+    "email": "sophia.martinez@example.com",
+    "company": "Netflix",
+    "position": "Content Strategist",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "",
+      "Industry": "Entertainment",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e6",
+    "name": "Daniel Anderson",
+    "email": "daniel.anderson@dummy.com",
+    "company": "IBM",
+    "position": "Cloud Architect",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/danielanderson",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e7",
+    "name": "Olivia Thomas",
+    "email": "olivia.thomas@example.com",
+    "company": "Adobe",
+    "position": "UX Designer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/oliviathomas",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e8",
+    "name": "James Taylor",
+    "email": "james.taylor@example.com",
+    "company": "Oracle",
+    "position": "Database Engineer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435e9",
+    "name": "Isabella Moore",
+    "email": "isabella.moore@dummy.com",
+    "company": "Intel",
+    "position": "Hardware Engineer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/isabellamoore",
+      "Industry": "Semiconductors",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435ea",
+    "name": "William Jackson",
+    "email": "william.jackson@example.com",
+    "company": "Apple",
+    "position": "iOS Developer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/williamjackson",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435eb",
+    "name": "Mia White",
+    "email": "mia.white@example.com",
+    "company": "Spotify",
+    "position": "Marketing Manager",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "",
+      "Industry": "Music",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435ec",
+    "name": "Benjamin Harris",
+    "email": "ben.harris@example.com",
+    "company": "Salesforce",
+    "position": "Sales Manager",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/benharris",
+      "Industry": "SaaS",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435ed",
+    "name": "Charlotte Martin",
+    "email": "charlotte.martin@dummy.com",
+    "company": "Uber",
+    "position": "Operations Manager",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/charlottemartin",
+      "Industry": "Transportation",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.834Z",
+    "updatedAt": "2026-03-06T11:07:51.834Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435ee",
+    "name": "Lucas Thompson",
+    "email": "lucas.thompson@example.com",
+    "company": "Airbnb",
+    "position": "Business Analyst",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "",
+      "Industry": "Hospitality",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435ef",
+    "name": "Amelia Garcia",
+    "email": "amelia.garcia@example.com",
+    "company": "Stripe",
+    "position": "Fintech Engineer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/ameliagarcia",
+      "Industry": "Finance",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f0",
+    "name": "Henry Clark",
+    "email": "henry.clark@dummy.com",
+    "company": "Nvidia",
+    "position": "AI Researcher",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/henryclark",
+      "Industry": "Semiconductors",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f1",
+    "name": "Evelyn Rodriguez",
+    "email": "evelyn.rodriguez@example.com",
+    "company": "PayPal",
+    "position": "Security Engineer",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "",
+      "Industry": "Finance",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f2",
+    "name": "Alexander Lewis",
+    "email": "alex.lewis@example.com",
+    "company": "LinkedIn",
+    "position": "Data Scientist",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/alexlewis",
+      "Industry": "Technology",
+      "Location": "USA"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f3",
+    "name": "Harper Walker",
+    "email": "harper.walker@dummy.com",
+    "company": "Shopify",
+    "position": "E-commerce Manager",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "https://linkedin.com/in/harperwalker",
+      "Industry": "E-commerce",
+      "Location": "USAR\u0000a\u0000h\u0000u\u0000l\u0000 \u0000S\u0000h\u0000a\u0000r\u0000m\u0000a\u0000"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f4",
+    "name": "\u0000P\u0000r\u0000i\u0000y\u0000a\u0000 \u0000M\u0000e\u0000h\u0000t\u0000a\u0000",
+    "email": "\u0000p\u0000r\u0000i\u0000y\u0000a\u0000@\u0000i\u0000n\u0000n\u0000o\u0000v\u0000a\u0000t\u0000e\u0000x\u0000.\u0000i\u0000o\u0000",
+    "company": "\u0000I\u0000n\u0000n\u0000o\u0000v\u0000a\u0000t\u0000e\u0000X\u0000",
+    "position": "\u0000V\u0000P\u0000 \u0000S\u0000a\u0000l\u0000e\u0000s\u0000",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "\u0000",
+      "Industry": "\u0000S\u0000t\u0000a\u0000r\u0000t\u0000u\u0000p\u0000",
+      "Location": "\u0000\r\u0000"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f5",
+    "name": "\u0000J\u0000a\u0000m\u0000e\u0000s\u0000 \u0000W\u0000a\u0000l\u0000k\u0000e\u0000r\u0000",
+    "email": "\u0000j\u0000.\u0000w\u0000a\u0000l\u0000k\u0000e\u0000r\u0000@\u0000g\u0000l\u0000o\u0000b\u0000e\u0000x\u0000.\u0000c\u0000o\u0000m\u0000",
+    "company": "\u0000G\u0000l\u0000o\u0000b\u0000e\u0000x\u0000 \u0000L\u0000t\u0000d\u0000",
+    "position": "\u0000D\u0000i\u0000r\u0000e\u0000c\u0000t\u0000o\u0000r\u0000",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "\u0000",
+      "Industry": "\u0000M\u0000i\u0000d\u0000-\u0000M\u0000a\u0000r\u0000k\u0000e\u0000t\u0000",
+      "Location": "\u0000\r\u0000"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f6",
+    "name": "\u0000S\u0000a\u0000r\u0000a\u0000 \u0000K\u0000i\u0000m\u0000",
+    "email": "\u0000s\u0000a\u0000r\u0000a\u0000@\u0000n\u0000e\u0000x\u0000u\u0000s\u0000.\u0000i\u0000o\u0000",
+    "company": "\u0000N\u0000e\u0000x\u0000u\u0000s\u0000 \u0000H\u0000e\u0000a\u0000l\u0000t\u0000h\u0000",
+    "position": "\u0000F\u0000o\u0000u\u0000n\u0000d\u0000e\u0000r\u0000",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "\u0000",
+      "Industry": "\u0000H\u0000e\u0000a\u0000l\u0000t\u0000h\u0000c\u0000a\u0000r\u0000e\u0000",
+      "Location": "\u0000\r\u0000"
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  },
+  {
+    "_id": "69aab5871b1fa2371eb435f7",
+    "name": "\u0000",
+    "email": "\u0000@dummy.com",
+    "company": "",
+    "position": "",
+    "tags": [],
+    "status": "New",
+    "currentStep": 0,
+    "metadata": {
+      "LinkedIn": "",
+      "Industry": "",
+      "Location": ""
+    },
+    "__v": 0,
+    "createdAt": "2026-03-06T11:07:51.835Z",
+    "updatedAt": "2026-03-06T11:07:51.835Z"
+  }
+]
