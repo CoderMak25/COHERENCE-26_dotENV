@@ -1,5 +1,5 @@
 import { Icon } from '@iconify/react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext'
 import { useState, useEffect } from 'react'
 
@@ -9,6 +9,8 @@ const titleMap = {
     '/campaigns': 'WORKFLOWS',
     '/analytics': 'ANALYTICS',
     '/logs': 'LOGS',
+    '/settings': 'SETTINGS',
+    '/profile': 'PROFILE',
 }
 
 export default function Topbar() {
@@ -55,9 +57,9 @@ export default function Topbar() {
                     <div className="theme-icon icon-moon"><Icon icon="solar:moon-bold" /></div>
                 </button>
 
-                <div className="w-[30px] h-[30px] bg-[var(--bg-raised)] brutalist-panel flex items-center justify-center text-accent text-[11px] font-bold">
+                <Link to="/profile" className="w-[30px] h-[30px] bg-[var(--bg-raised)] brutalist-panel flex items-center justify-center text-accent text-[11px] font-bold hover:-translate-y-[1px] transition-transform cursor-pointer">
                     OP
-                </div>
+                </Link>
             </div>
         </header>
     )

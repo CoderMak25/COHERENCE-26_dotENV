@@ -6,6 +6,7 @@ const navItems = [
     { path: '/leads', label: 'LEADS', icon: 'solar:users-group-two-rounded-linear', target: 'leads' },
     { path: '/campaigns', label: 'WORKFLOWS', icon: 'solar:branching-paths-down-linear', target: 'workflow' },
     { path: '/logs', label: 'LOGS', icon: 'solar:database-linear', target: 'logs' },
+    { path: '/settings', label: 'SETTINGS', icon: 'solar:settings-linear', target: 'settings' },
 ]
 
 export default function Sidebar() {
@@ -38,10 +39,6 @@ export default function Sidebar() {
                         </NavLink>
                     )
                 })}
-                <button className="nav-btn w-full h-[44px] flex items-center px-4 text-xs uppercase font-normal text-[var(--text-secondary)] border-l-[3px] border-transparent transition-colors duration-150 mt-auto mb-2">
-                    <Icon icon="solar:settings-linear" className="nav-icon text-base mr-3 text-[var(--text-muted)]" />
-                    <span className="tracking-widest">SETTINGS</span>
-                </button>
             </nav>
 
             <div className="m-4 p-3 bg-[var(--bg-raised)] brutalist-panel flex flex-col gap-1.5">
