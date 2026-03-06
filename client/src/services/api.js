@@ -63,4 +63,11 @@ export const dashboardAPI = {
     getStats: () => api.get('/dashboard/stats')
 }
 
+// Users
+export const usersAPI = {
+    getProfile: (params) => api.get('/users/profile', { params }),
+    updateProfile: (data) => api.put('/users/profile', data),
+    updateSettings: (data) => api.put('/users/settings', data),
+}
+
 export default api

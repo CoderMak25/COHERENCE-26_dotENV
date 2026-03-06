@@ -4,7 +4,9 @@ import { dirname, resolve } from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-dotenv.config({ path: resolve(__dirname, '../../.env') })
+// Load env from server/.env (one level up from src)
+dotenv.config({ path: resolve(__dirname, '../.env') })
+
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -15,6 +17,7 @@ import campaignsRouter from './routes/campaigns.js'
 import workflowsRouter from './routes/workflows.js'
 import aiRouter from './routes/ai.js'
 import logsRouter from './routes/logs.js'
+import usersRouter from './routes/users.js'
 import dashboardRouter from './routes/dashboard.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import './queues/workers/outreachWorker.js'
@@ -35,6 +38,7 @@ app.use('/api/campaigns', campaignsRouter)
 app.use('/api/workflows', workflowsRouter)
 app.use('/api/ai', aiRouter)
 app.use('/api/logs', logsRouter)
+app.use('/api/users', usersRouter)
 app.use('/api/dashboard', dashboardRouter)
 
 // Health check

@@ -2,11 +2,25 @@ import Bull from 'bull'
 
 const redisUrl = process.env.REDIS_URL
 
-export const outreachQueue = redisUrl
-    ? new Bull('outreach', redisUrl)
-    : new Bull('outreach', {
-          redis: { host: 'localhost', port: 6379 }
-      })
+// Configure Bull/ioredis so connection failures don't crash the app
+const bullOptions = redisUrl
+    ? {
+          redis: {
+              // Use Upstash TLS endpoint via REDIS_URL
+              url: redisUrl,
+              // Prevent MaxRetriesPerRequestError from crashing the process
+              maxRetriesPerRequest: null
+          }
+      }
+    : {
+          redis: {
+              host: 'localhost',
+              port: 6379,
+              maxRetriesPerRequest: null
+          }
+      }
+
+export const outreachQueue = new Bull('outreach', bullOptions)
 
 outreachQueue.on('completed', (job) => {
     console.log(`Job ${job.id} completed`)
