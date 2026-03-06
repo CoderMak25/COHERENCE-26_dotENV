@@ -30,14 +30,14 @@ try {
 //  SEND EMAIL — Gmail API first, SMTP fallback
 // ═══════════════════════════════════════════════════════════════════
 
-export const sendEmail = async ({ to, subject, body, from }) => {
+export const sendEmail = async ({ to, subject, body, from, threadId }) => {
     const start = Date.now()
 
     // ── Try Gmail API first ──
     try {
         const status = await getConnectionStatus()
         if (status.connected) {
-            const result = await sendViaGmailAPI({ to, subject, body, from })
+            const result = await sendViaGmailAPI({ to, subject, body, from, threadId })
             console.log(`[EmailService] Sent via Gmail API to ${to} (thread: ${result.threadId})`)
             return {
                 success: true,

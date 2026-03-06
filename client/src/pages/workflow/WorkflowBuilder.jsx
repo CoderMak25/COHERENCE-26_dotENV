@@ -143,12 +143,12 @@ function WorkflowCanvas() {
     const onDrop = useCallback((e) => {
         e.preventDefault()
         const type = e.dataTransfer.getData('application/workflow-node')
-        if (!type) return
-        const bounds = reactFlowWrapper.current?.getBoundingClientRect()
-        if (!bounds || !reactFlowInstance) return
+        if (!type || !reactFlowInstance) return
+
+        // screenToFlowPosition already handles viewport transform — pass raw screen coords
         const position = reactFlowInstance.screenToFlowPosition({
-            x: e.clientX - bounds.left,
-            y: e.clientY - bounds.top,
+            x: e.clientX,
+            y: e.clientY,
         })
         addNode(type, position)
     }, [reactFlowInstance, addNode])
