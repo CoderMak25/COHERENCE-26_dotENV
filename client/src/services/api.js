@@ -58,4 +58,9 @@ export const logsAPI = {
     getAll: (params) => api.get('/logs', { params })
 }
 
+// Dashboard
+export const dashboardAPI = {
+    getStats: () => api.get('/dashboard/stats')
+}
+
 export default api
