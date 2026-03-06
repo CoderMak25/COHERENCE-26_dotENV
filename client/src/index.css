@@ -167,7 +167,67 @@ input[type="checkbox"]:checked::before {
     box-shadow: 3px 3px 0px var(--shadow-color) !important;
 }
 
+/* Sidebar Container */
+.sidebar-container {
+    transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
 /* Sidebar Navigation */
+.sidebar-nav-btn {
+    position: relative;
+    border-left: 0px solid transparent;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease !important;
+}
+.sidebar-nav-active {
+    background-color: var(--accent) !important;
+    border-right: 2px solid var(--border-bright) !important;
+    box-shadow: none !important;
+}
+.sidebar-nav-active span, .sidebar-nav-active svg {
+    color: #0D0D0D !important;
+    font-weight: 700 !important;
+}
+.sidebar-nav-btn:not(.sidebar-nav-active):hover {
+    background-color: var(--bg-hover) !important;
+    border-left: 3px solid var(--accent) !important;
+}
+.sidebar-nav-btn:not(.sidebar-nav-active):active {
+    transform: translateX(2px) !important;
+}
+
+/* Sidebar Tooltips (collapsed state) */
+.sidebar-tooltip {
+    pointer-events: none;
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 2px solid var(--border-bright);
+    box-shadow: 3px 3px 0px var(--shadow-color);
+    padding: 5px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+    z-index: 100;
+    transition: opacity 150ms ease, transform 150ms ease !important;
+}
+.sidebar-nav-btn:hover .sidebar-tooltip,
+.group:hover .sidebar-tooltip {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0px);
+}
+
+/* Sidebar Collapse Button */
+.sidebar-collapse-btn {
+    transition: background-color 150ms ease !important;
+}
+
+/* Legacy nav-btn compat (for any remaining usage) */
 .nav-btn.active {
     background-color: var(--accent) !important;
     border-left: 0px !important;
