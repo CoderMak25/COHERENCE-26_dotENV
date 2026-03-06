@@ -180,7 +180,7 @@ export default function Dashboard() {
                                     key={r}
                                     onClick={() => setChartRange(r)}
                                     className={`border-2 border-[var(--border-bright)] text-[10px] font-bold px-2.5 py-0.5 transition-transform hover:-translate-y-[1px] ${chartRange === r
-                                        ? 'bg-[var(--accent)] text-[#0D0D0D] border-[#0D0D0D] shadow-[2px_2px_0_#0D0D0D]'
+                                        ? 'bg-[var(--accent)] text-[var(--text-inverted)] border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)]'
                                         : 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[2px_2px_0_var(--shadow-color)]'
                                         }`}
                                 >
@@ -191,21 +191,19 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-1 relative border-l-2 border-[var(--border-bright)] border-b-2 pb-6 pl-2 flex items-end gap-1.5" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 19%, var(--border) 20%)' }}>
                         <div className="absolute -left-8 bottom-0 text-[10px] font-bold text-[var(--text-muted)]">0</div>
-                        <div className="absolute -left-9 top-[50%] text-[10px] font-bold text-[var(--text-muted)]">{Math.round(maxChart / 2)}</div>
-                        <div className="absolute -left-9 top-0 text-[10px] font-bold text-[var(--text-muted)]">{maxChart}</div>
-                        {chartData.map((day, i) => {
-                            const heightPct = maxChart > 0 ? (day.value / maxChart) * 100 : 0
-                            return (
-                                <div
-                                    key={day.name}
-                                    className={`flex-1 ${day.value === 0 ? 'bg-[var(--border)]' : 'bg-accent'} border-2 border-[var(--border-bright)] hover:-translate-y-1 transition-transform relative group`}
-                                    style={{ height: `${Math.max(heightPct, 2)}%` }}
-                                >
-                                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[var(--text-muted)]">{day.name}</span>
-                                    <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] px-3 py-1 text-[10px] font-bold text-[var(--text-primary)] z-10">{day.value}</div>
-                                </div>
-                            )
-                        })}
+                        <div className="absolute -left-9 top-[80%] text-[10px] font-bold text-[var(--text-muted)]">50</div>
+                        <div className="absolute -left-9 top-[40%] text-[10px] font-bold text-[var(--text-muted)]">150</div>
+                        <div className="absolute -left-9 top-0 text-[10px] font-bold text-[var(--text-muted)]">200</div>
+                        {dayLabels.map((day, i) => (
+                            <div
+                                key={day}
+                                className={`flex-1 ${i === 3 || i === 5 || i === 6 ? 'bg-[var(--border)]' : 'bg-accent'} border-2 border-[var(--border-bright)] hover:-translate-y-1 transition-transform relative group`}
+                                style={{ height: barHeights[i] }}
+                            >
+                                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[var(--text-muted)]">{day}</span>
+                                <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] px-3 py-1 text-[10px] font-bold text-[var(--text-primary)] z-10">{barValues[i]}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 

@@ -30,18 +30,18 @@ export default function Sidebar() {
             <NavLink
                 to={item.path}
                 className={`sidebar-nav-btn group relative w-full flex items-center ${collapsed ? 'justify-center px-0 h-[44px]' : 'px-4 h-[44px]'} text-xs uppercase font-normal transition-all duration-200 ${isActive
-                    ? 'sidebar-nav-active bg-[var(--accent)] text-[#0D0D0D] font-bold'
+                    ? 'sidebar-nav-active bg-[var(--accent)] text-[var(--text-inverted)] font-bold'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
                     }`}
             >
                 {/* Active accent bar */}
                 {isActive && (
-                    <div className="absolute left-0 top-[8px] bottom-[8px] w-[4px] bg-[#0D0D0D]" />
+                    <div className="absolute left-0 top-[8px] bottom-[8px] w-[4px] bg-[var(--text-inverted)]" />
                 )}
 
                 <Icon
                     icon={item.icon}
-                    className={`text-[18px] flex-shrink-0 transition-colors duration-150 ${isActive ? 'text-[#0D0D0D]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'} ${collapsed ? '' : 'mr-3'}`}
+                    className={`text-[18px] flex-shrink-0 transition-colors duration-150 ${isActive ? 'text-[var(--text-inverted)]' : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'} ${collapsed ? '' : 'mr-3'}`}
                 />
 
                 {!collapsed && (
@@ -75,8 +75,8 @@ export default function Sidebar() {
             {/* ─── LOGO ─── */}
             <div className={`flex items-center ${collapsed ? 'justify-center p-[16px]' : 'p-[20px]'} transition-all duration-300`}>
                 {collapsed ? (
-                    <div className="w-[28px] h-[28px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[2px_2px_0_#0D0D0D] flex items-center justify-center">
-                        <span className="font-syne font-bold text-[10px] text-[#0D0D0D]">OX</span>
+                    <div className="w-[28px] h-[28px] bg-[var(--accent)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] flex items-center justify-center">
+                        <span className="font-syne font-bold text-[10px] text-[var(--text-inverted)]">OX</span>
                     </div>
                 ) : (
                     <div>
