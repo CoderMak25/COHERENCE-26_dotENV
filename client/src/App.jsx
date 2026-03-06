@@ -6,11 +6,13 @@ import Sidebar from './components/layout/Sidebar'
 import Topbar from './components/layout/Topbar'
 import Landing from './pages/landing/Landing'
 import Login from './pages/Login'
+import VoiceAgent from './pages/VoiceAgent'
 import Dashboard from './pages/Dashboard'
 import Leads from './pages/Leads'
 import Campaigns from './pages/Campaigns'
 import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
+import VoiceLogs from './pages/VoiceLogs'
 import WorkflowBuilder from './pages/workflow/WorkflowBuilder'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
@@ -29,6 +31,7 @@ function AppLayout() {
                         <Route path="/workflows" element={<WorkflowBuilder />} />
                         <Route path="/analytics" element={<Analytics />} />
                         <Route path="/logs" element={<Logs />} />
+                        <Route path="/voice-logs" element={<VoiceLogs />} />
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/profile" element={<Profile />} />
                     </Routes>
@@ -47,6 +50,7 @@ export default function App() {
                         {/* Public routes */}
                         <Route path="/" element={<Landing />} />
                         <Route path="/login" element={<Login />} />
+                        <Route path="/voice/:leadId" element={<VoiceAgent />} />
                         {/* Protected app routes */}
                         <Route path="/app/*" element={
                             <ProtectedRoute>

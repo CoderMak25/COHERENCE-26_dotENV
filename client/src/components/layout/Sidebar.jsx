@@ -10,7 +10,8 @@ const mainNavItems = [
 ]
 
 const systemNavItems = [
-    { path: '/app/logs', label: 'LOGS', icon: 'solar:database-linear' },
+    { path: '/app/voice-logs', label: 'VOICE LOGS', icon: 'solar:microphone-3-linear' },
+    { path: '/app/logs', label: 'SYS LOGS', icon: 'solar:database-linear' },
     { path: '/app/settings', label: 'SETTINGS', icon: 'solar:settings-linear' },
 ]
 

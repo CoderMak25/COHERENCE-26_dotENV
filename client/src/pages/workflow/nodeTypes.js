@@ -55,6 +55,13 @@ export const NODE_DEFS = {
     inputs: 1, outputs: [{ id: 'out', label: '' }],
     getPreview: (c) => c.subject ? `"${c.subject.substring(0, 30)}${c.subject.length > 30 ? '…' : ''}"` : 'No subject set',
   },
+  send_telegram: {
+    type: 'send_telegram', label: 'Telegram', category: 'outreach',
+    tag: 'TG', description: 'Send Telegram message via bot',
+    defaultConfig: { username: '', sendToAll: false },
+    inputs: 1, outputs: [{ id: 'out', label: '' }],
+    getPreview: (c) => c.username ? `@${c.username}` : 'All leads (bot users)',
+  },
   linkedin_dm: {
     type: 'linkedin_dm', label: 'LinkedIn DM', category: 'outreach',
     tag: 'OUT', description: 'Send LinkedIn message',

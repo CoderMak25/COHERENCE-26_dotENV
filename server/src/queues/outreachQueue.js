@@ -10,13 +10,12 @@ if (redisUrl) {
         const bullOptions = {
             redis: {
                 maxRetriesPerRequest: null,
-                retryStrategy: () => null, // Just drop the connection instead of crashing apps
+                retryStrategy: () => null,
                 enableReadyCheck: false,
                 ...(isTls ? { tls: { rejectUnauthorized: false } } : {})
             }
         }
 
-        // Bull handles parsing the redisUrl if we pass it as string with opts
         outreachQueue = new Bull('outreach', redisUrl, bullOptions)
 
         outreachQueue.on('completed', (job) => {

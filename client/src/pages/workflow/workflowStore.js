@@ -14,6 +14,7 @@ const LOG_MESSAGES = {
     trigger_webhook: (c) => ({ tag: 'TRG', message: `Webhook received: \`${c.method || 'POST'} ${c.path || '/webhook'}\`` }),
     trigger_manual: () => ({ tag: 'TRG', message: `Manual trigger fired` }),
     send_email: (c) => ({ tag: 'OUT', message: `Email sent: \`${c.subject || 'Hey {{first_name}}'}\` [${c.template || 'intro'}]` }),
+    send_telegram: (c) => ({ tag: 'TG', message: `Telegram sent to \`@${c.username || 'all leads'}\`` }),
     linkedin_dm: () => ({ tag: 'OUT', message: `LinkedIn DM sent to \`Sarah Chen\`` }),
     send_sms: () => ({ tag: 'OUT', message: `SMS sent: \`Hey Sarah, quick update on...\` (142/160 chars)` }),
     whatsapp: () => ({ tag: 'OUT', message: `WhatsApp message delivered to \`+1-555-0142\`` }),

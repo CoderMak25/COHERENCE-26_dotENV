@@ -197,6 +197,43 @@ export default function ConfigForm({ nodeType, config: initialConfig, onSave, co
                 <LivePreviewBtn nodeType="send_email" config={config} color={color} />
             </>
         ),
+        send_telegram: () => (
+            <>
+                <Field label="TELEGRAM USERNAME">
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 12, fontWeight: 700 }}>@</span>
+                        <input className="wf-form-input" style={{ paddingLeft: 24 }} placeholder="username" value={config.username || ''} onChange={(e) => set('username', e.target.value)} />
+                    </div>
+                    <div className="wf-form-hint" style={{ fontSize: 11, marginTop: 4, opacity: 0.6 }}>Leave empty to send to all registered bot users</div>
+                </Field>
+                <div className="wf-form-group wf-form-row">
+                    <label className="wf-form-label">SEND TO ALL LEADS</label>
+                    <input type="checkbox" className="wf-form-checkbox" checked={config.sendToAll || false}
+                        onChange={(e) => set('sendToAll', e.target.checked)} />
+                </div>
+                <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, lineHeight: 1.5 }}>
+                    📱 Recipients must message <strong>@OutreachXbot</strong> on Telegram first to register. The bot uses Groq AI for personalized conversations.
+                </div>
+                <button
+                    className="wf-form-preset-btn"
+                    style={{ width: '100%', marginTop: 8, padding: '6px 0' }}
+                    onClick={async () => {
+                        const username = config.username || ''
+                        try {
+                            const res = await fetch('http://localhost:5000/api/telegram/test-send', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username, message: '👋 Test message from OutreachEngine workflow!' }),
+                            })
+                            const data = await res.json()
+                            alert(data.status === 'sent' ? `✅ Test sent to @${data.username}!` : `❌ ${data.error}`)
+                        } catch { alert('❌ Server not reachable') }
+                    }}
+                >
+                    📤 SEND TEST MESSAGE
+                </button>
+            </>
+        ),
         linkedin_dm: () => (
             <>
                 <VarHint />
