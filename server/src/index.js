@@ -19,7 +19,11 @@ import aiRouter from './routes/ai.js'
 import logsRouter from './routes/logs.js'
 import usersRouter from './routes/users.js'
 import dashboardRouter from './routes/dashboard.js'
+<<<<<<< HEAD
 import voiceRouter from './routes/voice.js'
+=======
+import telegramRouter from './routes/telegram.js'
+>>>>>>> b885a221c2b626dbf9f08c49d7406787b6afac19
 import { errorHandler } from './middleware/errorHandler.js'
 import './queues/workers/outreachWorker.js'
 
@@ -41,7 +45,11 @@ app.use('/api/ai', aiRouter)
 app.use('/api/logs', logsRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/dashboard', dashboardRouter)
+<<<<<<< HEAD
 app.use('/api/voice', voiceRouter)
+=======
+app.use('/api/telegram', telegramRouter)
+>>>>>>> b885a221c2b626dbf9f08c49d7406787b6afac19
 
 // Health check
 app.get('/api/health', (req, res) => {

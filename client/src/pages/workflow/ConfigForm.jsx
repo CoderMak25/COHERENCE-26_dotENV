@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import useWorkflowStore from './workflowStore'
+import { aiAPI } from '../../services/api'
 
 const VARIABLE_HINT = '{{first_name}} {{company}} {{role}} {{pain_point}} {{sender_name}}'
 
@@ -25,6 +27,74 @@ function Select({ value, onChange, options }) {
 
 function VarHint() {
     return <div className="wf-var-hint">{VARIABLE_HINT}</div>
+}
+
+function LivePreviewBtn({ nodeType, config, color }) {
+    const { assignedLeads, allLeads } = useWorkflowStore()
+    const [preview, setPreview] = useState(null)
+    const [loading, setLoading] = useState(false)
+
+    if (assignedLeads.length === 0) {
+        return <div className="wf-form-info" style={{ marginTop: 12 }}>Assign leads to see a live email preview.</div>
+    }
+
+    const leadId = assignedLeads[0]
+    const lead = allLeads.find(l => l._id === leadId)
+
+    const handlePreview = async () => {
+        setLoading(true)
+        setPreview(null)
+        try {
+            if (nodeType === 'send_email' && !config.aiPersonalize) {
+                let subj = config.subject || ''
+                let body = config.body || ''
+                const firstName = (lead?.name || 'there').split(' ')[0]
+                const replacer = (text) => text
+                    .replace(/\{\{first_name\}\}/g, firstName)
+                    .replace(/\{\{company\}\}/g, lead?.company || '')
+                    .replace(/\{\{name\}\}/g, lead?.name || '')
+                    .replace(/\{\{email\}\}/g, lead?.email || '')
+                    .replace(/\{\{position\}\}/g, lead?.position || '')
+
+                setPreview({ subject: replacer(subj), body: replacer(body) })
+            } else {
+                const res = await aiAPI.generate({ leadId, nodeType: 'email' })
+                if (typeof res === 'string') {
+                    setPreview({ body: res })
+                } else {
+                    setPreview({ subject: res?.subject, body: res?.body || JSON.stringify(res) })
+                }
+            }
+        } catch (err) {
+            setPreview({ error: err.message || 'Failed to generate preview' })
+        }
+        setLoading(false)
+    }
+
+    return (
+        <div className="wf-form-group" style={{ marginTop: '16px' }}>
+            <button
+                className="wf-config-ghost-btn"
+                onClick={handlePreview}
+                style={{ width: '100%', borderColor: color, color }}
+                disabled={loading}
+            >
+                {loading ? 'GENERATING...' : `PREVIEW FOR: ${lead?.name?.toUpperCase() || 'LEAD'}`}
+            </button>
+            {preview && (
+                <div className="wf-live-preview" style={{ marginTop: 8, padding: 8, background: 'var(--bg-raised)', border: `1px solid ${color}40`, fontSize: 12, fontFamily: 'sans-serif', whiteSpace: 'pre-wrap', lineHeight: 1.4, color: 'var(--text-primary)' }}>
+                    {preview.error ? (
+                        <div style={{ color: 'var(--danger)' }}>{preview.error}</div>
+                    ) : (
+                        <>
+                            {preview.subject && <div style={{ marginBottom: 6, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}><strong>Subject:</strong> {preview.subject}</div>}
+                            <div>{preview.body || preview}</div>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    )
 }
 
 export default function ConfigForm({ nodeType, config: initialConfig, onSave, color }) {
@@ -123,6 +193,45 @@ export default function ConfigForm({ nodeType, config: initialConfig, onSave, co
                     <input type="checkbox" className="wf-form-checkbox" checked={config.aiPersonalize || false}
                         onChange={(e) => set('aiPersonalize', e.target.checked)} />
                 </div>
+                {/* LIVE PREVIEW ACTION */}
+                <LivePreviewBtn nodeType="send_email" config={config} color={color} />
+            </>
+        ),
+        send_telegram: () => (
+            <>
+                <Field label="TELEGRAM USERNAME">
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 12, fontWeight: 700 }}>@</span>
+                        <input className="wf-form-input" style={{ paddingLeft: 24 }} placeholder="username" value={config.username || ''} onChange={(e) => set('username', e.target.value)} />
+                    </div>
+                    <div className="wf-form-hint" style={{ fontSize: 11, marginTop: 4, opacity: 0.6 }}>Leave empty to send to all registered bot users</div>
+                </Field>
+                <div className="wf-form-group wf-form-row">
+                    <label className="wf-form-label">SEND TO ALL LEADS</label>
+                    <input type="checkbox" className="wf-form-checkbox" checked={config.sendToAll || false}
+                        onChange={(e) => set('sendToAll', e.target.checked)} />
+                </div>
+                <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, lineHeight: 1.5 }}>
+                    📱 Recipients must message <strong>@OutreachXbot</strong> on Telegram first to register. The bot uses Groq AI for personalized conversations.
+                </div>
+                <button
+                    className="wf-form-preset-btn"
+                    style={{ width: '100%', marginTop: 8, padding: '6px 0' }}
+                    onClick={async () => {
+                        const username = config.username || ''
+                        try {
+                            const res = await fetch('http://localhost:5000/api/telegram/test-send', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username, message: '👋 Test message from OutreachEngine workflow!' }),
+                            })
+                            const data = await res.json()
+                            alert(data.status === 'sent' ? `✅ Test sent to @${data.username}!` : `❌ ${data.error}`)
+                        } catch { alert('❌ Server not reachable') }
+                    }}
+                >
+                    📤 SEND TEST MESSAGE
+                </button>
             </>
         ),
         linkedin_dm: () => (
@@ -208,6 +317,7 @@ export default function ConfigForm({ nodeType, config: initialConfig, onSave, co
                 <Field label="MAX TOKENS">
                     <input className="wf-form-input" type="number" value={config.maxTokens || 500} onChange={(e) => set('maxTokens', parseInt(e.target.value) || 500)} />
                 </Field>
+                <LivePreviewBtn nodeType="ai_generate" config={config} color={color} />
             </>
         ),
         ai_score: () => (

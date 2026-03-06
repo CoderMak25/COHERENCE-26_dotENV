@@ -4,10 +4,9 @@
  * Orchestrates voice conversation sessions:
  *   start → processMessage → ... → end
  *
- * Uses in-memory session store (Map) for active conversations.
- * Uses existing Groq client (aiService.js) for LLM chat.
- * Uses servamClient for STT/TTS.
- * Updates lead score via existing processEngagementEvent.
+ * ── API ROUTING ──
+ * • CONVERSATION (STT / Chat / TTS) → Sarvam AI exclusively
+ * • LOG ANALYSIS & SUMMARY          → Groq  (only usage)
  */
 
 import Groq from 'groq-sdk'
@@ -17,24 +16,29 @@ import Log from '../models/Log.js'
 import { speechToText, textToSpeech } from './servamClient.js'
 import { processEngagementEvent } from './leadScoringService.js'
 
-// ─── Groq LLM client (reusing pattern from aiService.js) ───
+// ─── Groq LLM client — ONLY for post-call analysis ───
 let groqClient = null
 const getGroq = () => {
     if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY })
     return groqClient
 }
+// Use a model that is actually available on Groq
+const ANALYSIS_MODEL = 'llama-3.3-70b-versatile'
 
-const LLM_MODEL = 'gemma2-9b-it'
+// ─── Sarvam config ───
+const SARVAM_CHAT_URL = 'https://api.sarvam.ai/v1/chat/completions'
+const SARVAM_TRANSLATE_URL = 'https://api.sarvam.ai/translate'
+const SARVAM_CHAT_MODEL = 'sarvam-m'
 
 // ─── Active session store ───
 const sessions = new Map()
 
-// ─── Cached prompts (static, reused across sessions) ───
+// ─── System prompt (used for Sarvam chat) ───
 const SYSTEM_PROMPT = `You are a friendly, highly conversational AI sales assistant representing NexReach AI.
 
 CRITICAL INSTRUCTION: You must sound exactly like a real human on a phone call. 
 - Use natural filler words like "Umm", "Hmm", "Ah", "Well", "Yeah", "Got it".
-- Keep your sentences very short and conversational.
+- Keep your sentences very short and conversational (2-3 sentences max).
 - Do NOT sound like an AI. Do NOT use lists, bullet points, or formal markdown.
 - End your responses with short, engaging questions.
 
@@ -51,7 +55,7 @@ Conversation goals:
 
 If the user says they are not interested, busy, or want to call later, politely wrap up.
 
-IMPORTANT: Always respond in the SAME LANGUAGE the user speaks in. If they speak Hindi, respond in Hindi. If English, respond in English.`
+IMPORTANT: Always respond in the SAME LANGUAGE the user speaks in. If they speak Hindi, respond in Hindi. If English, respond in English. If they mix Hindi and English, respond in that same mix.`
 
 /**
  * Build lead-specific context string.
@@ -81,6 +85,126 @@ function buildGreeting(lead) {
 }
 
 /**
+ * Sanitize the chat history so it strictly alternates:
+ *   system → user → assistant → user → assistant → ...
+ * Sarvam's API crashes if this pattern is violated.
+ */
+function buildSarvamMessages(chatHistory) {
+    const result = []
+    let lastRole = null
+
+    for (const msg of chatHistory) {
+        if (msg.role === 'system') {
+            result.push(msg)
+            lastRole = 'system'
+            continue
+        }
+
+        // After system or after assistant, we expect 'user'
+        if (msg.role === 'user') {
+            if (lastRole === 'user') {
+                // Merge consecutive user messages
+                result[result.length - 1] = {
+                    role: 'user',
+                    content: result[result.length - 1].content + ' ' + msg.content
+                }
+            } else {
+                result.push(msg)
+                lastRole = 'user'
+            }
+        } else if (msg.role === 'assistant') {
+            if (lastRole === 'assistant') {
+                // Merge consecutive assistant messages
+                result[result.length - 1] = {
+                    role: 'assistant',
+                    content: result[result.length - 1].content + ' ' + msg.content
+                }
+            } else if (lastRole === 'system') {
+                // Can't have assistant right after system — inject a dummy user turn
+                result.push({ role: 'user', content: 'Hello.' })
+                result.push(msg)
+                lastRole = 'assistant'
+            } else {
+                result.push(msg)
+                lastRole = 'assistant'
+            }
+        }
+    }
+
+    // The last message MUST be 'user' (we want the AI to reply)
+    if (result.length > 0 && result[result.length - 1].role !== 'user') {
+        // If it ends with assistant, pop it — we just need the user turn at the end
+        while (result.length > 1 && result[result.length - 1].role === 'assistant') {
+            result.pop()
+        }
+    }
+
+    return result
+}
+
+/**
+ * Call Sarvam's Chat Completion API.
+ */
+async function sarvamChat(messages) {
+    const response = await fetch(SARVAM_CHAT_URL, {
+        method: 'POST',
+        headers: {
+            'api-subscription-key': process.env.SARVAM_API_KEY,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: SARVAM_CHAT_MODEL,
+            temperature: 0.7,
+            max_tokens: 100,
+            messages
+        })
+    })
+
+    if (!response.ok) {
+        const errBody = await response.text()
+        console.error('[VoiceAgent] Sarvam chat error:', response.status, errBody)
+        throw new Error(`Sarvam chat ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.choices[0]?.message?.content?.trim() || ''
+}
+
+/**
+ * Translate text using Sarvam Translate API.
+ */
+async function sarvamTranslate(text, targetLang) {
+    try {
+        const response = await fetch(SARVAM_TRANSLATE_URL, {
+            method: 'POST',
+            headers: {
+                'api-subscription-key': process.env.SARVAM_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                input: text,
+                source_language_code: 'en-IN',
+                target_language_code: targetLang,
+                speaker_gender: 'Female',
+                mode: 'formal',
+                model: 'sarvam-translate:v1'
+            })
+        })
+        if (response.ok) {
+            const data = await response.json()
+            return data.translated_text || text
+        }
+    } catch (e) {
+        console.error('[VoiceAgent] Translation error:', e.message)
+    }
+    return text // fallback to original
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PUBLIC API
+// ═══════════════════════════════════════════════════════════
+
+/**
  * Start a voice session for a lead.
  */
 export async function startSession(leadId, language = 'hi-IN') {
@@ -97,7 +221,7 @@ export async function startSession(leadId, language = 'hi-IN') {
     const sessionId = conversation._id.toString()
     const greeting = buildGreeting(lead)
 
-    // Handle "Hinglish" logic natively on the LLM side
+    // Handle "Hinglish" logic
     let promptAddition = ''
     let ttsLanguage = language
     if (language === 'hi-IN-hinglish') {
@@ -108,6 +232,8 @@ export async function startSession(leadId, language = 'hi-IN') {
     }
 
     // Store session in memory
+    // Chat history starts with system + user("Hello") + assistant(greeting)
+    // This ensures the alternating pattern Sarvam requires.
     sessions.set(sessionId, {
         leadId: lead._id.toString(),
         lead,
@@ -115,47 +241,25 @@ export async function startSession(leadId, language = 'hi-IN') {
         language: ttsLanguage,
         chatHistory: [
             { role: 'system', content: SYSTEM_PROMPT + promptAddition + '\n\n' + buildLeadContext(lead) },
-            { role: 'user', content: 'Hello.' }, // Sarvam strictly requires a user message before an assistant message
-            { role: 'assistant', content: greeting } // Keep English greeting in history for context
+            { role: 'user', content: 'Hello.' },
+            { role: 'assistant', content: greeting }
         ],
         startTime: Date.now()
     })
 
-    // Translate greeting if not English before TTS
-    let translatedGreeting = greeting;
+    // Translate greeting for non-English languages
+    let spokenGreeting = greeting
     if (ttsLanguage !== 'en-IN') {
-        try {
-            const sarvamResponse = await fetch('https://api.sarvam.ai/translate', {
-                method: 'POST',
-                headers: {
-                    'api-subscription-key': process.env.SARVAM_API_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    input: greeting,
-                    source_language_code: 'en-IN',
-                    target_language_code: ttsLanguage,
-                    speaker_gender: 'Female',
-                    mode: 'formal',
-                    model: 'sarvam-translate:v1'
-                })
-            });
-            if (sarvamResponse.ok) {
-                const data = await sarvamResponse.json();
-                translatedGreeting = data.translated_text || greeting;
-            }
-        } catch (e) {
-            console.error('[VoiceAgent] Sarvam translation error:', e.message);
-        }
+        spokenGreeting = await sarvamTranslate(greeting, ttsLanguage)
     }
 
-    // Save actual spoken greeting to DB
+    // Save greeting to DB
     await Conversation.findByIdAndUpdate(sessionId, {
-        $push: { messages: { speaker: 'ai', text: translatedGreeting, timestamp: new Date() } }
+        $push: { messages: { speaker: 'ai', text: spokenGreeting, timestamp: new Date() } }
     })
 
-    // Generate TTS for translated greeting
-    const tts = await textToSpeech(translatedGreeting, ttsLanguage)
+    // Generate TTS for greeting
+    const tts = await textToSpeech(spokenGreeting, ttsLanguage)
 
     // Log the voice session start
     await Log.create({
@@ -172,7 +276,7 @@ export async function startSession(leadId, language = 'hi-IN') {
 
     return {
         sessionId,
-        greeting,
+        greeting: spokenGreeting,
         audioBase64: tts.audioBase64,
         lead: {
             name: lead.name,
@@ -201,7 +305,7 @@ export async function processMessage(sessionId, audioBuffer, language = 'hi-IN')
         return await endSession(sessionId)
     }
 
-    // 1. Speech-to-Text
+    // 1. Speech-to-Text (Sarvam)
     const stt = await speechToText(audioBuffer, sttLanguage)
     const userText = stt.text || ''
 
@@ -217,33 +321,15 @@ export async function processMessage(sessionId, audioBuffer, language = 'hi-IN')
         $push: { messages: { speaker: 'user', text: userText, timestamp: new Date() } }
     })
 
-    // 3. Generate response using Sarvam directly (bypassing Groq)
+    // 3. Generate AI response via Sarvam Chat
     let aiText = ''
     try {
-        const sarvamResponse = await fetch('https://api.sarvam.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'api-subscription-key': process.env.SARVAM_API_KEY,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'sarvam-m',
-                temperature: 0.7,
-                max_tokens: 80,
-                messages: session.chatHistory
-            })
-        });
-
-        if (!sarvamResponse.ok) {
-            console.error('[VoiceAgent] Sarvam LLM error:', await sarvamResponse.text());
-            throw new Error('Sarvam API error');
-        }
-
-        const data = await sarvamResponse.json();
-        aiText = data.choices[0]?.message?.content?.trim() || '';
+        const sanitized = buildSarvamMessages(session.chatHistory)
+        aiText = await sarvamChat(sanitized)
     } catch (err) {
-        console.error('[VoiceAgent] Sarvam LLM fallback error:', err.message);
-        aiText = 'I apologize, I had a brief hiccup. Could you repeat that?';
+        console.error('[VoiceAgent] Sarvam chat failed:', err.message)
+        // Natural fallback — no "hiccup" language
+        aiText = 'Sorry, can you say that again?'
     }
 
     // 4. Add AI message to chat history
@@ -254,7 +340,7 @@ export async function processMessage(sessionId, audioBuffer, language = 'hi-IN')
         $push: { messages: { speaker: 'ai', text: aiText, timestamp: new Date() } }
     })
 
-    // 5. Text-to-Speech
+    // 5. Text-to-Speech (Sarvam)
     const tts = await textToSpeech(aiText, session.language || 'hi-IN')
 
     return {
@@ -286,7 +372,7 @@ export async function endSession(sessionId) {
     // Mark end time
     conversation.endTime = new Date()
 
-    // Analyze conversation using LLM
+    // Analyze conversation using Groq (only Groq usage in entire file)
     const analysis = await analyzeConversation(conversation.messages)
     conversation.analysis = analysis
     await conversation.save()
@@ -294,7 +380,6 @@ export async function endSession(sessionId) {
     // Update lead score based on analysis
     const lead = await Lead.findById(session.leadId)
     if (lead) {
-        // Map voice events to engagement events
         const voiceEvents = getVoiceEngagementEvents(analysis)
         for (const eventType of voiceEvents) {
             const updates = processEngagementEvent(lead.toObject(), eventType)
@@ -304,7 +389,6 @@ export async function endSession(sessionId) {
         }
         await lead.save()
 
-        // Log session end
         await Log.create({
             leadId: lead._id,
             leadName: lead.name,
@@ -328,11 +412,11 @@ export async function endSession(sessionId) {
 }
 
 /**
- * Analyze conversation transcript using LLM.
+ * Analyze conversation transcript using Groq LLM (the ONLY Groq usage).
  */
 async function analyzeConversation(messages) {
     if (!messages || messages.length === 0) {
-        return { interestLevel: 'none', questions: [], sentiment: 'neutral', nextAction: 'no_action' }
+        return { summary: 'No conversation recorded.', interestLevel: 'none', questions: [], sentiment: 'neutral', nextAction: 'no_action' }
     }
 
     const transcript = messages.map(m => `${m.speaker === 'ai' ? 'AI' : 'User'}: ${m.text}`).join('\n')
@@ -349,7 +433,7 @@ Only respond with the JSON object, nothing else.`
 
     try {
         const response = await getGroq().chat.completions.create({
-            model: LLM_MODEL,
+            model: ANALYSIS_MODEL,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: `Analyze this transcript:\n\n${transcript}` }
@@ -371,18 +455,16 @@ Only respond with the JSON object, nothing else.`
         }
     } catch (err) {
         console.error('[VoiceAgent] Analysis error:', err.message)
-        return { interestLevel: 'none', questions: [], sentiment: 'neutral', nextAction: 'no_action' }
+        return { summary: 'Analysis unavailable.', interestLevel: 'none', questions: [], sentiment: 'neutral', nextAction: 'no_action' }
     }
 }
 
 /**
- * Map conversation analysis to engagement event types for the existing scoring system.
+ * Map conversation analysis to engagement event types.
  */
 function getVoiceEngagementEvents(analysis) {
     const events = []
-
-    // Voice conversation itself is significant engagement
-    events.push('link_click') // +20 — they clicked the voice link
+    events.push('link_click') // +20
 
     if (analysis.interestLevel === 'high') {
         events.push('reply_received') // +40

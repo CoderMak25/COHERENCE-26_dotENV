@@ -21,6 +21,7 @@ if (outreachQueue) {
         console.warn('Reply worker not available:', e.message)
     }
 
+    // Process all queue jobs sequentially (one by one)
     outreachQueue.process(async (job) => {
         const data = job.data
 
