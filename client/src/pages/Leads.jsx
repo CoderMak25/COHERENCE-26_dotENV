@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
-import { MOCK_LEADS } from '../data/mockData'
+import { useLeads } from '../hooks/useLeads'
 
 export default function Leads() {
     const [search, setSearch] = useState('')
@@ -9,7 +9,7 @@ export default function Leads() {
     const [selectAll, setSelectAll] = useState(false)
     const [selectedIds, setSelectedIds] = useState([])
 
-    const leads = MOCK_LEADS
+    const { leads, loading, error, pagination } = useLeads()
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -110,7 +110,17 @@ export default function Leads() {
                         </tr>
                     </thead>
                     <tbody className="text-[11px] font-bold">
-                        {leads.map((lead, index) => {
+                        {loading && (
+                            <tr>
+                                <td colSpan="10" className="p-[20px] text-center text-[var(--text-muted)]">Loading leads from database...</td>
+                            </tr>
+                        )}
+                        {!loading && leads.length === 0 && (
+                            <tr>
+                                <td colSpan="10" className="p-[20px] text-center text-[var(--text-muted)]">No leads found. Please import data.</td>
+                            </tr>
+                        )}
+                        {!loading && leads.map((lead, index) => {
                             const badge = getStatusBadge(lead.status)
                             return (
                                 <tr key={lead._id} className={`hover:bg-[var(--bg-hover)] transition-colors duration-75 ${index % 2 === 0 ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-base)]'}`}>
@@ -129,7 +139,7 @@ export default function Leads() {
                                     <td className="p-[12px_16px] text-[var(--text-muted)]">{lead.email}</td>
                                     <td className="p-[12px_16px]"><span className={`badge ${badge.class}`}>{badge.label}</span></td>
                                     <td className={`p-[12px_16px] ${lead.workflow ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>{lead.workflow || '—'}</td>
-                                    <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.lastAction}</td>
+                                    <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.lastAction || 'No Actions Yet'}</td>
                                     <td className="p-[12px_16px] flex gap-2 justify-center">
                                         <button className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
                                             <Icon icon="solar:play-bold" />
@@ -147,7 +157,9 @@ export default function Leads() {
 
             {/* PAGINATION */}
             <div className="mt-5 pt-4 flex items-center justify-between flex-shrink-0 border-t-2 border-[var(--border-bright)]">
-                <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest">SHOWING 1–25 OF 1,248 LEADS</span>
+                <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest">
+                    SHOWING {(pagination?.page - 1) * pagination?.limit + 1 || 0}–{Math.min((pagination?.page) * pagination?.limit, pagination?.total || 0) || 0} OF {pagination?.total || 0} LEADS
+                </span>
                 <div className="flex gap-2">
                     <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px]">‹</button>
                     <button className="h-[32px] w-[32px] page-btn active flex items-center justify-center transition-transform hover:-translate-y-[1px]">1</button>

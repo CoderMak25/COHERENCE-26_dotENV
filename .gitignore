@@ -1,8 +1,26 @@
 node_modules/
 dist/
+build/
+
+# Environment files (keep example envs tracked)
 .env
 *.env.local
-.DS_Store
+server/.env
+client/.env
+
+# Logs
 *.log
+logs/
+
+# Coverage / test output
 coverage/
-.env.example
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Cursor / IDE metadata
+.cursor/
+
