@@ -24,7 +24,7 @@ export default function Settings() {
                 <div
                     className="w-[12px] h-[12px] absolute transition-all duration-200"
                     style={{
-                        backgroundColor: enabled ? '#0D0D0D' : 'var(--text-muted)',
+                        backgroundColor: enabled ? 'var(--text-inverted)' : 'var(--text-muted)',
                         right: enabled ? '2px' : 'auto',
                         left: enabled ? 'auto' : '2px'
                     }}
@@ -68,8 +68,8 @@ export default function Settings() {
 
                     {/* Profile Photo */}
                     <div className="flex items-center gap-5 mb-6">
-                        <div className="w-[72px] h-[72px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[4px_4px_0_#0D0D0D] flex items-center justify-center flex-shrink-0">
-                            <span className="font-syne text-2xl font-bold text-[#0D0D0D]">OP</span>
+                        <div className="w-[72px] h-[72px] bg-[var(--accent)] border-2 border-[var(--border-bright)] shadow-[4px_4px_0_var(--shadow-color)] flex items-center justify-center flex-shrink-0">
+                            <span className="font-syne text-2xl font-bold text-[var(--text-inverted)]">OP</span>
                         </div>
                         <div className="flex flex-col gap-2">
                             <button className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[10px] py-[6px] px-[12px]">
@@ -270,8 +270,8 @@ export default function Settings() {
                             style={{
                                 backgroundColor: 'var(--danger)',
                                 color: '#FFFFFF',
-                                borderColor: '#0D0D0D',
-                                boxShadow: '3px 3px 0px #0D0D0D'
+                                borderColor: 'var(--border-bright)',
+                                boxShadow: '3px 3px 0px var(--shadow-color)'
                             }}
                         >
                             DELETE ACCOUNT

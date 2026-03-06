@@ -158,7 +158,7 @@ export default function Dashboard() {
                                     key={r}
                                     onClick={() => setChartRange(r)}
                                     className={`border-2 border-[var(--border-bright)] text-[10px] font-bold px-2.5 py-0.5 transition-transform hover:-translate-y-[1px] ${chartRange === r
-                                        ? 'bg-[var(--accent)] text-[#0D0D0D] border-[#0D0D0D] shadow-[2px_2px_0_#0D0D0D]'
+                                        ? 'bg-[var(--accent)] text-[var(--text-inverted)] border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)]'
                                         : 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[2px_2px_0_var(--shadow-color)]'
                                         }`}
                                 >
@@ -178,7 +178,7 @@ export default function Dashboard() {
                                 className={`flex-1 ${i === 3 || i === 5 || i === 6 ? 'bg-[var(--border)]' : 'bg-accent'} border-2 border-[var(--border-bright)] hover:-translate-y-1 transition-transform relative group`}
                                 style={{ height: barHeights[i] }}
                             >
-                                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[var(--text-muted)]">{day}</span>
+                                <span className={`absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold ${i === 3 || i === 5 || i === 6 ? 'text-[var(--text-muted)]' : 'text-accent'}`}>{day}</span>
                                 <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] px-3 py-1 text-[10px] font-bold text-[var(--text-primary)] z-10">{barValues[i]}</div>
                             </div>
                         ))}
