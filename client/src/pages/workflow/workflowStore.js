@@ -285,7 +285,7 @@ const useWorkflowStore = create((set, get) => ({
         }
     },
 
-    // ── Run Simulation ──
+    // ── Run Simulation (offline preview) ──
     runSimulation: async () => {
         const { nodes, edges } = get()
         if (nodes.length === 0) return
@@ -365,6 +365,59 @@ const useWorkflowStore = create((set, get) => ({
         }
 
         set({ running: false, activeNodeId: null })
+    },
+
+    // ── Run Backend Workflow (real execution) ──
+    runBackendWorkflow: async () => {
+        set({ running: true, logs: [], showLog: true, runCount: get().runCount + 1 })
+
+        const time = () => new Date().toLocaleTimeString('en-US', { hour12: false })
+
+        get().appendLog({ time: time(), tag: 'SYS', message: 'Connecting to backend...' })
+
+        try {
+            const res = await fetch('http://localhost:5000/api/workflows/run', { method: 'POST' })
+            const data = await res.json()
+
+            if (data.status === 'completed' && data.results) {
+                const r = data.results
+                get().appendLog({ time: time(), tag: 'SYS', message: `Processed \`${r.total}\` leads total` })
+
+                if (r.initial_sent > 0)
+                    get().appendLog({ time: time(), tag: 'OUT', message: `Initial outreach sent: \`${r.initial_sent}\`` })
+                if (r.follow_up_sent > 0)
+                    get().appendLog({ time: time(), tag: 'FLW', message: `Follow-ups sent: \`${r.follow_up_sent}\`` })
+                if (r.final_reminder_sent > 0)
+                    get().appendLog({ time: time(), tag: 'FLW', message: `Final reminders sent: \`${r.final_reminder_sent}\`` })
+                if (r.skipped_no_contact > 0)
+                    get().appendLog({ time: time(), tag: 'SAF', message: `Skipped (no contact): \`${r.skipped_no_contact}\`` })
+                if (r.skipped_bounced > 0)
+                    get().appendLog({ time: time(), tag: 'SAF', message: `Skipped (bounced): \`${r.skipped_bounced}\`` })
+                if (r.skipped_too_soon > 0)
+                    get().appendLog({ time: time(), tag: '--', message: `Skipped (too soon): \`${r.skipped_too_soon}\`` })
+                if (r.already_done > 0)
+                    get().appendLog({ time: time(), tag: 'END', message: `Already completed: \`${r.already_done}\`` })
+
+                if (r.errors && r.errors.length > 0) {
+                    for (const e of r.errors) {
+                        get().appendLog({ time: time(), tag: 'ERR', message: `Error for \`${e.name}\`: ${e.error}` })
+                    }
+                }
+
+                get().appendLog({ time: time(), tag: 'END', message: 'Workflow execution complete' })
+            } else {
+                get().appendLog({ time: time(), tag: 'ERR', message: `Unexpected response: ${JSON.stringify(data)}` })
+            }
+        } catch (err) {
+            get().appendLog({ time: time(), tag: 'ERR', message: `Backend error: ${err.message}` })
+            get().appendLog({ time: time(), tag: 'SYS', message: 'Falling back to simulation...' })
+            set({ running: false })
+            // Fall back to simulation
+            get().runSimulation()
+            return
+        }
+
+        set({ running: false })
     },
 }))
 

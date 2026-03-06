@@ -7,7 +7,7 @@ export default function FloatingToolbar() {
         undo, history, historyIndex,
         saveWorkflow, loadWorkflow,
         toggleLog, showLog,
-        running, runSimulation,
+        running, runBackendWorkflow,
         nodes,
     } = useWorkflowStore()
 
@@ -51,7 +51,7 @@ export default function FloatingToolbar() {
             <div className="wf-tb-sep" />
             <button
                 className={`wf-tb-run ${running ? 'wf-running' : ''}`}
-                onClick={() => { if (!running) runSimulation() }}
+                onClick={() => { if (!running) runBackendWorkflow() }}
                 disabled={running || nodes.length === 0}
             >
                 {running ? (

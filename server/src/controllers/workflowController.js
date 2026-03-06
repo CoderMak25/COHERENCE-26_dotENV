@@ -1,5 +1,16 @@
 import Workflow from '../models/Workflow.js'
 import { outreachQueue } from '../queues/outreachQueue.js'
+import { runOutreachWorkflow } from '../services/executionEngine.js'
+
+// POST /api/workflows/run — trigger the full outreach workflow
+export const runWorkflow = async (req, res, next) => {
+    try {
+        const results = await runOutreachWorkflow()
+        res.json({ status: 'completed', results })
+    } catch (err) {
+        next(err)
+    }
+}
 
 // GET /api/workflows
 export const getWorkflows = async (req, res, next) => {

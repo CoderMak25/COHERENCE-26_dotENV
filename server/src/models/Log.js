@@ -6,13 +6,31 @@ const logSchema = new mongoose.Schema({
     action: String,
     status: {
         type: String,
-        enum: ['SENT', 'FAILED', 'PENDING', 'SKIPPED', 'OK', 'RETRYING']
+        enum: ['SENT', 'FAILED', 'PENDING', 'SKIPPED', 'OK', 'RETRYING', 'BOUNCED', 'RECEIVED']
     },
     detail: String,
     latencyMs: Number,
+
+    // Outreach-specific fields
+    step: {
+        type: String,
+        enum: [
+            'initial_outreach', 'follow_up', 'final_reminder',
+            'ai_reply_1', 'ai_reply_2', 'ai_reply_3',
+            'reply_received', 'manual_reply', null
+        ],
+        default: null
+    },
+    channel: { type: String, enum: ['email', 'linkedin', null], default: null },
+    direction: { type: String, enum: ['sent', 'received', null], default: null },
+    subject: { type: String, default: null },
+    body: { type: String, default: null },
+    errorMsg: { type: String, default: null },
 }, { timestamps: true })
 
 logSchema.index({ status: 1 })
 logSchema.index({ createdAt: -1 })
+logSchema.index({ leadId: 1, direction: 1 })
+logSchema.index({ leadId: 1, step: 1 })
 
 export default mongoose.model('Log', logSchema)

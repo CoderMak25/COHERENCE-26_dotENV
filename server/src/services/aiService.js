@@ -8,6 +8,7 @@ const getClient = () => {
     return ai
 }
 
+// ── Existing: generate message for workflow nodes ──
 export const generateMessage = async (lead, nodeType = 'email') => {
     const prompt = `
 You are an expert B2B sales copywriter.
@@ -36,4 +37,103 @@ Respond ONLY with valid JSON, no markdown, no code fences:
 
     const text = response.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     return JSON.parse(text)
+}
+
+
+// ── Outreach Engine: step-based message generation ──
+
+const OUTREACH_PROMPTS = {
+
+    initial_outreach: (data) => `
+You are writing a short professional cold outreach message.
+
+Lead Information:
+Name: ${data.name}
+Company: ${data.company || ''}
+Role: ${data.position || ''}
+Industry: ${data.industry || ''}
+
+Context:
+We are introducing our AI-powered outreach automation platform that helps
+teams automate communication and manage leads efficiently.
+
+Instructions:
+- Personalize the message using the available lead information.
+- If any information like company, role, or industry is missing, do NOT mention or guess it.
+- Keep the tone friendly, professional, and conversational.
+- Keep the message under 80 words.
+- End with a simple call-to-action asking for a short conversation or demo.
+- Do not sound salesy or pushy.
+- Output only the email body. No subject line. No sign-off placeholder.
+`,
+
+    follow_up: (data) => `
+Write a polite follow-up outreach message.
+
+Lead Information:
+Name: ${data.name}
+Company: ${data.company || ''}
+Role: ${data.position || ''}
+
+Context:
+We previously sent an introduction about our AI-powered outreach automation platform.
+
+Instructions:
+- Gently remind the lead about the previous message.
+- Be polite and respectful of their time.
+- Keep the message under 50 words.
+- If company or role information is missing, do not reference it.
+- End with a simple question asking if they are open to a short discussion.
+- Output only the message body. No subject line.
+`,
+
+    final_reminder: (data) => `
+Write a final short outreach message.
+
+Lead Information:
+Name: ${data.name}
+
+Context:
+We have previously sent two outreach messages about our automation platform.
+
+Instructions:
+- Acknowledge that this will be the final follow-up.
+- Keep the message friendly and respectful.
+- Keep the message under 40 words.
+- Do not sound pushy or desperate.
+- Leave the door open for future conversation.
+- Output only the message body. No subject line.
+`,
+
+    reply_response: (data) => `
+You are a sales assistant replying professionally to a lead's message.
+
+Lead Name: ${data.name}
+Lead's message: "${data.leadReply}"
+
+Instructions:
+- Write a short, friendly, natural response.
+- Goal: offer more details and suggest a quick call or demo.
+- Keep under 60 words.
+- Tone: natural and human, not robotic.
+- Do not use filler phrases like "Great question!" or "Absolutely!".
+- Output only the reply body. No subject line.
+`
+}
+
+
+export const generateOutreachMessage = async (step, leadData) => {
+    const promptFn = OUTREACH_PROMPTS[step]
+    if (!promptFn) {
+        throw new Error(`Unknown outreach step: ${step}`)
+    }
+
+    const prompt = promptFn(leadData)
+
+    const response = await getClient().models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: prompt
+    })
+
+    return response.text.trim()
 }
