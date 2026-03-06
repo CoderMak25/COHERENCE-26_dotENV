@@ -160,7 +160,8 @@ export const NODE_DEFS = {
     type: 'loop', label: 'Loop', category: 'logic',
     tag: 'FLW', description: 'Iterate over a list',
     defaultConfig: { field: '', maxIterations: 10 },
-    inputs: 1, outputs: [{ id: 'out', label: '' }],
+    inputs: 1,
+    outputs: [{ id: 'next', label: 'Next' }, { id: 'done', label: 'Done' }],
     getPreview: (c) => c.field ? `over ${c.field}` : 'No field set',
   },
   merge: {

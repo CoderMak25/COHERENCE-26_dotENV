@@ -49,11 +49,38 @@ function buildGraph(nodes, edges) {
     }
 
     for (const edge of edges) {
-        const fromId = edge.from
-        const toId = edge.to
+        const fromId = edge.from || edge.source
+        const toId = edge.to || edge.target
+        const handle = edge.sourceHandle
 
-        if (graph[fromId] && !graph[fromId].next.includes(toId)) {
-            graph[fromId].next.push(toId)
+        if (graph[fromId]) {
+            const type = graph[fromId].type
+
+            // Map specific source handles to fixed port indexes
+            if (type === 'condition') {
+                if (handle === 'yes') graph[fromId].next[0] = toId
+                else if (handle === 'no') graph[fromId].next[1] = toId
+                else graph[fromId].next.push(toId)
+            } else if (type === 'ab_split') {
+                if (handle === 'a') graph[fromId].next[0] = toId
+                else if (handle === 'b') graph[fromId].next[1] = toId
+                else graph[fromId].next.push(toId)
+            } else if (type === 'wait_event') {
+                if (handle === 'success') graph[fromId].next[0] = toId
+                else if (handle === 'timeout') graph[fromId].next[1] = toId
+                else graph[fromId].next.push(toId)
+            } else if (type === 'unsubscribe_check') {
+                if (handle === 'safe') graph[fromId].next[0] = toId
+                else if (handle === 'unsub') graph[fromId].next[1] = toId
+                else graph[fromId].next.push(toId)
+            } else if (type === 'loop') {
+                if (handle === 'next') graph[fromId].next[0] = toId
+                else if (handle === 'done') graph[fromId].next[1] = toId
+                else graph[fromId].next.push(toId)
+            } else {
+                // Single output nodes
+                graph[fromId].next[0] = toId
+            }
         }
     }
 
@@ -587,6 +614,7 @@ function handleCondition(node, ctx, send) {
     const operator = config.operator || 'equals'
     const value = String(config.value || '').toLowerCase()
 
+    ctx._conditionValue = value
     const actual = getLeadValue(field, lead, ctx)
     const result = evaluateCondition(actual, operator, value)
     const port = result ? 0 : 1   // 0=YES, 1=NO
@@ -607,7 +635,18 @@ function getLeadValue(field, lead, ctx) {
         industry: lead.industry,
         ai_reply_count: lead.aiReplyCount,
         contact_status: lead.contactStatus,
+        ai_score: lead.aiScore,
+        // Event booleans based on status/tags (simplified for simulation)
+        replied: String(lead.status).toLowerCase() === 'replied',
+        email_opened: false, // requires tracking pixel
+        email_clicked: false,
     }
+
+    if (field === 'tag_exists') {
+        const expectedTag = String(ctx._conditionValue || '').toLowerCase()
+        return lead.tags && lead.tags.some(t => t.toLowerCase() === expectedTag) ? 'true' : 'false'
+    }
+
     return map[field] !== undefined ? map[field] : (lead[field] ?? null)
 }
 

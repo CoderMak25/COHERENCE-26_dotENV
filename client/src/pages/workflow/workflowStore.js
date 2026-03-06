@@ -33,7 +33,10 @@ const LOG_MESSAGES = {
         const branch = Math.random() * 100 < (c.ratioA || 50)
         return { tag: 'A/B', message: `A/B Split (${c.ratioA || 50}/${c.ratioB || 50}): Branch \`${branch ? 'A' : 'B'}\``, branch: branch ? 'a' : 'b' }
     },
-    loop: (c) => ({ tag: 'FLW', message: `Iterating over \`${c.field || 'contacts'}\` (${c.maxIterations || 10} max)` }),
+    loop: (c) => {
+        const keepLooping = Math.random() < 0.8
+        return { tag: 'FLW', message: `Iterating over \`${c.field || 'contacts'}\` (${c.maxIterations || 10} max) → ${keepLooping ? 'Continue' : 'Done'}`, branch: keepLooping ? 'next' : 'done' }
+    },
     merge: () => ({ tag: 'FLW', message: `Branches merged` }),
     wait_event: (c) => {
         const success = Math.random() > 0.4
@@ -53,7 +56,7 @@ const LOG_MESSAGES = {
 }
 
 // ─── Multi-output node types ───
-const MULTI_OUTPUT_TYPES = ['condition', 'ab_split', 'wait_event', 'unsubscribe_check']
+const MULTI_OUTPUT_TYPES = ['condition', 'ab_split', 'wait_event', 'unsubscribe_check', 'loop']
 
 // ── Default 4-node workflow ──
 const DEFAULT_NODES = [

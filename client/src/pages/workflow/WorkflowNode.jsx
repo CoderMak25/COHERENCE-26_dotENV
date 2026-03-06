@@ -43,12 +43,20 @@ function WorkflowNode({ id, data, selected }) {
                     <div className="wf-handle-multi-item" style={{ left: 'calc(50% - 40px)' }}>
                         <Handle type="source" position={Position.Bottom} id={def.outputs[0].id}
                             className="wf-handle-out" style={{ position: 'relative', transform: 'none' }} />
-                        <span className="wf-handle-label">{def.outputs[0].label}</span>
+                        <span className="wf-handle-label">
+                            {def.outputs[0].id === 'yes' ? (data.config?.yesLabel || def.outputs[0].label) :
+                                def.outputs[0].id === 'success' ? (data.config?.successLabel || def.outputs[0].label) :
+                                    def.outputs[0].label}
+                        </span>
                     </div>
                     <div className="wf-handle-multi-item" style={{ left: 'calc(50% + 25px)' }}>
                         <Handle type="source" position={Position.Bottom} id={def.outputs[1].id}
                             className="wf-handle-out wf-handle-secondary" style={{ position: 'relative', transform: 'none' }} />
-                        <span className="wf-handle-label">{def.outputs[1].label}</span>
+                        <span className="wf-handle-label">
+                            {def.outputs[1].id === 'no' ? (data.config?.noLabel || def.outputs[1].label) :
+                                def.outputs[1].id === 'timeout' ? (data.config?.timeoutLabel || def.outputs[1].label) :
+                                    def.outputs[1].label}
+                        </span>
                     </div>
                 </div>
             )}
