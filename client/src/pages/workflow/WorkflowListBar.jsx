@@ -9,7 +9,7 @@ export default function WorkflowListBar() {
         saving, dirty,
         loadSavedWorkflows, loadWorkflowFromDB,
         saveWorkflowToDB, createNewWorkflow, deleteWorkflowFromDB,
-        toggleLeadPicker, assignedLeads,
+        toggleLeadSelector, selectedLeadIds,
     } = useWorkflowStore()
 
     const [showDropdown, setShowDropdown] = useState(false)
@@ -116,10 +116,10 @@ export default function WorkflowListBar() {
                     )}
                 </div>
 
-                {/* Assign leads */}
-                <button className="wf-lb-btn" onClick={toggleLeadPicker}>
+                {/* Select leads — opens the LeadSelector panel */}
+                <button className="wf-lb-btn" onClick={toggleLeadSelector}>
                     <Icon icon="solar:users-group-two-rounded-linear" className="text-sm mr-1" />
-                    LEADS ({assignedLeads.length})
+                    LEADS ({selectedLeadIds.length})
                 </button>
 
                 {/* Save */}

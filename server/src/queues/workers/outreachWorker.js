@@ -21,8 +21,8 @@ if (outreachQueue) {
         console.warn('Reply worker not available:', e.message)
     }
 
-    // Process all queue jobs concurrently (up to 10 at a time) to speed up sending
-    outreachQueue.process(10, async (job) => {
+    // Process all queue jobs sequentially (one by one)
+    outreachQueue.process(async (job) => {
         const data = job.data
 
         if (data.type === 'poll_replies' && pollForReplies) {

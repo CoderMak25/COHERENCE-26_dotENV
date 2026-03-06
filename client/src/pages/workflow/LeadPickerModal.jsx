@@ -4,19 +4,19 @@ import useWorkflowStore from './workflowStore'
 
 export default function LeadPickerModal() {
     const {
-        showLeadPicker, closeLeadPicker,
+        showLeadSelector, toggleLeadSelector,
         allLeads, fetchLeads,
-        assignedLeads, toggleLeadAssignment, setAssignedLeads,
+        selectedLeadIds, setSelectedLeadIds,
     } = useWorkflowStore()
 
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
 
     useEffect(() => {
-        if (showLeadPicker) fetchLeads()
-    }, [showLeadPicker])
+        if (showLeadSelector) fetchLeads()
+    }, [showLeadSelector])
 
-    if (!showLeadPicker) return null
+    if (!showLeadSelector) return null
 
     const filtered = allLeads.filter((lead) => {
         const matchSearch = !search ||
@@ -27,32 +27,38 @@ export default function LeadPickerModal() {
         return matchSearch && matchStatus
     })
 
-    const allVisibleSelected = filtered.length > 0 && filtered.every((l) => assignedLeads.includes(l._id))
+    const allVisibleSelected = filtered.length > 0 && filtered.every((l) => selectedLeadIds.includes(l._id))
+
+    const toggleLead = (leadId) => {
+        setSelectedLeadIds(prev =>
+            prev.includes(leadId) ? prev.filter(id => id !== leadId) : [...prev, leadId]
+        )
+    }
 
     const toggleAll = () => {
         if (allVisibleSelected) {
             // Deselect all visible
             const visibleIds = filtered.map((l) => l._id)
-            setAssignedLeads(assignedLeads.filter((id) => !visibleIds.includes(id)))
+            setSelectedLeadIds(selectedLeadIds.filter((id) => !visibleIds.includes(id)))
         } else {
             // Select all visible
-            const newIds = [...new Set([...assignedLeads, ...filtered.map((l) => l._id)])]
-            setAssignedLeads(newIds)
+            const newIds = [...new Set([...selectedLeadIds, ...filtered.map((l) => l._id)])]
+            setSelectedLeadIds(newIds)
         }
     }
 
     const statuses = ['all', ...new Set(allLeads.map((l) => l.status).filter(Boolean))]
 
     return (
-        <div className="wf-lead-overlay" onClick={closeLeadPicker}>
+        <div className="wf-lead-overlay" onClick={toggleLeadSelector}>
             <div className="wf-lead-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="wf-lead-header">
                     <div>
-                        <h3 className="wf-lead-title">ASSIGN LEADS</h3>
-                        <span className="wf-lead-subtitle">{assignedLeads.length} SELECTED</span>
+                        <h3 className="wf-lead-title">SELECT LEADS</h3>
+                        <span className="wf-lead-subtitle">{selectedLeadIds.length} SELECTED</span>
                     </div>
-                    <button className="wf-lead-close" onClick={closeLeadPicker}>✕</button>
+                    <button className="wf-lead-close" onClick={toggleLeadSelector}>✕</button>
                 </div>
 
                 {/* Filters */}
@@ -94,12 +100,12 @@ export default function LeadPickerModal() {
                         <div className="wf-lead-empty">No leads found</div>
                     )}
                     {filtered.map((lead) => {
-                        const selected = assignedLeads.includes(lead._id)
+                        const selected = selectedLeadIds.includes(lead._id)
                         return (
                             <div
                                 key={lead._id}
                                 className={`wf-lead-item ${selected ? 'selected' : ''}`}
-                                onClick={() => toggleLeadAssignment(lead._id)}
+                                onClick={() => toggleLead(lead._id)}
                             >
                                 <div className={`wf-lead-check ${selected ? 'checked' : ''}`}>
                                     {selected && '✓'}
@@ -120,8 +126,8 @@ export default function LeadPickerModal() {
 
                 {/* Footer */}
                 <div className="wf-lead-footer">
-                    <span className="wf-lead-count">{assignedLeads.length} LEADS ASSIGNED</span>
-                    <button className="wf-lead-confirm" onClick={closeLeadPicker}>
+                    <span className="wf-lead-count">{selectedLeadIds.length} LEADS SELECTED</span>
+                    <button className="wf-lead-confirm" onClick={toggleLeadSelector}>
                         CONFIRM
                     </button>
                 </div>

@@ -7,9 +7,9 @@ export default function FloatingToolbar() {
         undo, history,
         saveWorkflowToDB, saveWorkflowJSON, loadWorkflow,
         toggleLog, showLog,
-        running, runBackendWorkflow, stopWorkflow, runSimulation, executeOnLeads,
-        nodes, saving, dirty, assignedLeads, workflowId,
-        toggleLeadSelector, showLeadSelector, selectedLeadIds,
+        running, runBackendWorkflow, stopWorkflow, runSimulation,
+        nodes, saving, dirty, workflowId,
+        selectedLeadIds,
     } = useWorkflowStore()
 
     const handleClear = () => {
@@ -44,12 +44,12 @@ export default function FloatingToolbar() {
     }
 
     const handleRun = () => {
-        if (workflowId && assignedLeads.length > 0) {
-            // Execute on backend with assigned leads
-            executeOnLeads()
-        } else {
-            // Simulate locally
+        if (selectedLeadIds.length === 0) {
+            // No leads selected — just simulate locally
             runSimulation()
+        } else {
+            // Execute on backend with selected leads (one by one, sequential)
+            runBackendWorkflow()
         }
     }
 
@@ -64,22 +64,15 @@ export default function FloatingToolbar() {
             <button className="wf-tb-btn" title="Zoom Out" onClick={() => rf.zoomOut()}>−</button>
             <button className="wf-tb-btn" title="Fit View" onClick={() => rf.fitView({ padding: 0.2 })}>⊞</button>
             <div className="wf-tb-sep" />
-            <button className="wf-tb-btn" title="Save to DB (Ctrl+S)" onClick={handleSave} disabled={saving}>
-                {saving ? '...' : dirty ? '↓●' : '↓'}
+            <button className="wf-tb-btn" title="Save to DB" onClick={handleSave}>
+                {saving ? '…' : dirty ? '💾*' : '💾'}
             </button>
-            <button className="wf-tb-btn" title="Export JSON" onClick={saveWorkflowJSON}>⤓</button>
-            <button className="wf-tb-btn" title="Import JSON" onClick={handleLoad}>↑</button>
+            <button className="wf-tb-btn" title="Export JSON" onClick={saveWorkflowJSON}>⬇</button>
+            <button className="wf-tb-btn" title="Import JSON" onClick={handleLoad}>⬆</button>
+            <div className="wf-tb-sep" />
             <button className={`wf-tb-btn ${showLog ? 'wf-tb-active' : ''}`} title="Toggle Log" onClick={toggleLog}>◫</button>
             <button className="wf-tb-btn wf-tb-danger" title="Clear Canvas" onClick={handleClear}>✕</button>
             <div className="wf-tb-sep" />
-            {/* Lead selector toggle */}
-            <button
-                className={`wf-tb-btn ${showLeadSelector ? 'wf-tb-active' : ''}`}
-                title="Select Leads"
-                onClick={toggleLeadSelector}
-            >
-                👥{selectedLeadIds.length > 0 && <span className="wf-tb-badge">{selectedLeadIds.length}</span>}
-            </button>
             {running ? (
                 <button
                     className="wf-tb-run wf-running"
@@ -93,9 +86,9 @@ export default function FloatingToolbar() {
                     className="wf-tb-run"
                     onClick={handleRun}
                     disabled={nodes.length === 0}
-                    title={assignedLeads.length > 0 ? `Execute on ${assignedLeads.length} leads` : 'Simulate flow'}
+                    title={selectedLeadIds.length > 0 ? `Execute on ${selectedLeadIds.length} leads (one by one)` : 'Simulate flow'}
                 >
-                    ▶ {assignedLeads.length > 0 ? `RUN (${assignedLeads.length})` : 'RUN'}
+                    ▶ {selectedLeadIds.length > 0 ? `RUN (${selectedLeadIds.length})` : 'RUN'}
                 </button>
             )}
         </div>

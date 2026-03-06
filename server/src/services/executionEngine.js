@@ -5,6 +5,8 @@ import Log from '../models/Log.js'
 import { generateMessage, generateOutreachMessage } from './aiService.js'
 import { sendEmail } from './emailService.js'
 import { validateAndRoute } from './leadValidator.js'
+import { outreachQueue } from '../queues/outreachQueue.js'
+import { checkThrottle } from './throttleService.js'
 
 // ── Helper: random int in range ──
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
@@ -126,8 +128,8 @@ export const runWorkflowGraphSSE = async (workflow, send, isAborted, leadIds) =>
 
             safeSend('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
 
-            // Delay between leads (1-2 seconds)
-            await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000))
+            // Small delay between leads to avoid rate limiting
+            await new Promise(r => setTimeout(r, 200))
 
         } catch (err) {
             failed++
@@ -394,14 +396,65 @@ async function handleEnd(node, ctx, send) {
 
 
 // ── DELAY ────────────────────────────────────────────────────────
-function handleDelay(node, ctx, send) {
+async function handleDelay(node, ctx, send) {
     const config = node.config || {}
+    const delayType = config.delayType || 'random'
     const minVal = parseInt(config.min || config.minVal || 1)
     const maxVal = parseInt(config.max || config.maxVal || 3)
-    const unit = config.unit || 'days'
-    const actual = randInt(minVal, maxVal)
+    const unit = config.unit || 'seconds'
 
-    send('log', { tag: 'FLW', message: `Delay: ${actual} ${unit} (${minVal}–${maxVal})` })
+    // Calculate actual delay value
+    let actual
+    if (delayType === 'fixed') {
+        actual = minVal
+    } else {
+        // random between min and max
+        actual = randInt(minVal, maxVal)
+    }
+
+    // Convert to milliseconds based on unit
+    const unitMultipliers = {
+        seconds: 1000,
+        minutes: 60 * 1000,
+        hours: 60 * 60 * 1000,
+        days: 24 * 60 * 60 * 1000,
+    }
+    const multiplier = unitMultipliers[unit] || 1000
+    const delayMs = actual * multiplier
+
+    // Human-readable duration
+    const humanDuration = actual + ' ' + unit
+
+    send('log', { tag: 'FLW', message: `⏳ Delay: waiting ${humanDuration}${delayType === 'random' ? ` (random ${minVal}–${maxVal} ${unit})` : ''}...` })
+
+    // Actually wait — with countdown updates for long delays
+    if (delayMs <= 10000) {
+        // Short delay: just wait
+        await new Promise(r => setTimeout(r, delayMs))
+    } else {
+        // Long delay: send countdown updates every few seconds
+        const intervalMs = Math.min(5000, delayMs / 4)  // update every 5s or 4 times total
+        const startTime = Date.now()
+        const endTime = startTime + delayMs
+
+        while (Date.now() < endTime) {
+            const remaining = endTime - Date.now()
+            if (remaining <= 0) break
+
+            const waitChunk = Math.min(intervalMs, remaining)
+            await new Promise(r => setTimeout(r, waitChunk))
+
+            if (Date.now() < endTime) {
+                const secsLeft = Math.ceil((endTime - Date.now()) / 1000)
+                const display = secsLeft >= 60
+                    ? `${Math.floor(secsLeft / 60)}m ${secsLeft % 60}s`
+                    : `${secsLeft}s`
+                send('log', { tag: 'FLW', message: `⏳ Delay: ${display} remaining...` })
+            }
+        }
+    }
+
+    send('log', { tag: 'FLW', message: `✓ Delay complete (${humanDuration})` })
     return { port: 0 }
 }
 
