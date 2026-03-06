@@ -11,12 +11,55 @@ export default function Settings() {
     const [saved, setSaved] = useState(false)
     const [showPasswordFields, setShowPasswordFields] = useState(false)
 
+    // Gmail OAuth state
+    const [gmailStatus, setGmailStatus] = useState({ connected: false })
+    const [gmailLoading, setGmailLoading] = useState(true)
+
     // Form state — populated from Firebase user + DB
     const [displayName, setDisplayName] = useState('')
     const [email, setEmail] = useState('')
     const [notifications, setNotifications] = useState(true)
     const [twoFactor, setTwoFactor] = useState(false)
     const [language, setLanguage] = useState('EN')
+
+    // Check Gmail connection status on mount
+    useEffect(() => {
+        const checkGmail = async () => {
+            try {
+                const res = await fetch('/api/auth/gmail/status')
+                const data = await res.json()
+                setGmailStatus(data)
+            } catch {
+                setGmailStatus({ connected: false })
+            }
+            setGmailLoading(false)
+        }
+        checkGmail()
+
+        // Handle OAuth callback redirect
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('gmail') === 'connected') {
+            setGmailStatus({ connected: true, email: params.get('email') || '' })
+            setGmailLoading(false)
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname)
+        }
+    }, [])
+
+    const handleConnectGmail = () => {
+        // Redirect to server OAuth endpoint (full page redirect)
+        window.location.href = '/api/auth/google'
+    }
+
+    const handleDisconnectGmail = async () => {
+        if (!confirm('Disconnect Gmail? Emails will fall back to SMTP.')) return
+        try {
+            await fetch('/api/auth/gmail/disconnect', { method: 'POST' })
+            setGmailStatus({ connected: false })
+        } catch {
+            alert('Failed to disconnect')
+        }
+    }
 
     // Load data from Firebase user + DB on mount
     useEffect(() => {
@@ -216,6 +259,83 @@ export default function Settings() {
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════
+                    GMAIL INTEGRATION SECTION
+                   ═══════════════════════════════════════════ */}
+                <div className="brutalist-card p-6 flex flex-col">
+                    <SectionHeader icon="solar:letter-linear" title="GMAIL INTEGRATION" />
+
+                    <div className="mb-4">
+                        <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest">
+                            EMAIL DELIVERY METHOD
+                        </span>
+                    </div>
+
+                    {gmailLoading ? (
+                        <div className="text-[11px] text-[var(--text-muted)] font-bold uppercase">
+                            Checking connection...
+                        </div>
+                    ) : gmailStatus.connected ? (
+                        <div className="flex flex-col gap-4">
+                            {/* Connected status */}
+                            <div className="flex items-center gap-3 p-4 bg-[#0a2a0a] border-2 border-[#00ff88] shadow-[2px_2px_0_#003d1a]">
+                                <div className="w-3 h-3 bg-[#00ff88] shadow-[0_0_8px_#00ff88]" style={{ animation: 'pulse 2s infinite' }}></div>
+                                <div className="flex flex-col">
+                                    <span className="text-[11px] font-bold text-[#00ff88] uppercase tracking-widest">
+                                        GMAIL CONNECTED
+                                    </span>
+                                    <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest mt-0.5">
+                                        {gmailStatus.email}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest leading-5">
+                                ✓ EMAILS SENT VIA GMAIL API (WORKS ON RENDER)<br />
+                                ✓ REPLY DETECTION VIA THREAD TRACKING<br />
+                                ✓ AUTO-REFRESH TOKENS — NO RE-LOGIN NEEDED
+                            </div>
+
+                            <button
+                                onClick={handleDisconnectGmail}
+                                className="btn-base bg-[var(--bg-raised)] text-[var(--text-muted)] text-[10px] py-[8px] px-[16px] self-start hover:text-red-400 hover:border-red-400 transition-colors"
+                            >
+                                DISCONNECT GMAIL
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-4">
+                            {/* Not connected */}
+                            <div className="flex items-center gap-3 p-4 bg-[var(--bg-raised)] border-2 border-[var(--border)]">
+                                <div className="w-3 h-3 bg-[var(--text-muted)] opacity-40"></div>
+                                <div className="flex flex-col">
+                                    <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                                        GMAIL NOT CONNECTED
+                                    </span>
+                                    <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mt-0.5">
+                                        USING SMTP FALLBACK (MAY FAIL ON RENDER)
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-widest leading-5">
+                                CONNECT GMAIL TO:<br />
+                                → SEND EMAILS VIA GMAIL API (WORKS ON RENDER)<br />
+                                → AUTO-DETECT REPLIES IN YOUR INBOX<br />
+                                → TRACK EMAIL THREADS FOR FOLLOW-UPS
+                            </div>
+
+                            <button
+                                onClick={handleConnectGmail}
+                                className="btn-base btn-accent text-[11px] py-[10px] px-[20px] self-start flex items-center gap-2"
+                            >
+                                <Icon icon="logos:google-gmail" className="text-base" />
+                                CONNECT GMAIL
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* ═══════════════════════════════════════════

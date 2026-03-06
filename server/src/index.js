@@ -19,6 +19,7 @@ import aiRouter from './routes/ai.js'
 import logsRouter from './routes/logs.js'
 import usersRouter from './routes/users.js'
 import dashboardRouter from './routes/dashboard.js'
+import authRouter from './routes/auth.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import './queues/workers/outreachWorker.js'
 
@@ -40,6 +41,7 @@ app.use('/api/ai', aiRouter)
 app.use('/api/logs', logsRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/dashboard', dashboardRouter)
+app.use('/api/auth', authRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -344,14 +344,18 @@ async function handleSendEmail(node, ctx, send) {
     const pk = ctx.promptKey || 'initial_outreach'
 
     if (result.success) {
-        await Lead.updateOne({ _id: lead._id }, {
-            $set: {
-                status: nextStatus(pk),
-                lastContactedAt: new Date(),
-                lastContact: new Date(),
-                gmailThreadSubject: subject,
-            }
-        })
+        const updateFields = {
+            status: nextStatus(pk),
+            lastContactedAt: new Date(),
+            lastContact: new Date(),
+            gmailThreadSubject: subject,
+        }
+        // Store Gmail thread ID for reply tracking (only available when using Gmail API)
+        if (result.threadId) {
+            updateFields.gmailThreadId = result.threadId
+        }
+
+        await Lead.updateOne({ _id: lead._id }, { $set: updateFields })
 
         await Log.create({
             leadId: lead._id,
@@ -848,6 +852,7 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
                 lead.lastContactedAt = new Date()
                 lead.lastContact = new Date()
                 lead.gmailThreadSubject = subject
+                if (result.threadId) lead.gmailThreadId = result.threadId
                 await lead.save()
 
                 if (campaign) {

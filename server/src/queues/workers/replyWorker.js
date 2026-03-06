@@ -1,6 +1,6 @@
 import Lead from '../../models/Lead.js'
 import Log from '../../models/Log.js'
-import { checkForReply } from '../../services/replyDetector.js'
+import { getThreadMessages, getConnectionStatus } from '../../services/gmailService.js'
 import { generateOutreachMessage } from '../../services/aiService.js'
 import { sendEmail } from '../../services/emailService.js'
 import { outreachQueue } from '../outreachQueue.js'
@@ -12,37 +12,57 @@ const REPLY_DELAY_MAX_MS = 300 * 60 * 1000   // 5 hours
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 
 /**
- * Poll Gmail inbox for replies from all active leads.
- * Called as a repeating Bull job every 5 minutes.
+ * Poll Gmail for replies using Gmail API (thread-based).
+ * Falls back to subject-based matching if no threadId.
  */
 export const pollForReplies = async () => {
     console.log('[ReplyWorker] Polling for replies...')
 
+    // Check if Gmail is connected
+    const gmailStatus = await getConnectionStatus()
+    if (!gmailStatus.connected) {
+        console.log('[ReplyWorker] Gmail not connected — skipping reply poll')
+        return { repliesFound: 0 }
+    }
+
+    // Find leads that have been emailed and have a Gmail threadId
     const activeLeads = await Lead.find({
-        status: { $in: ['contacted', 'follow_up_sent', 'final_reminder_sent', 'replied'] },
+        status: { $in: ['Contacted', 'contacted', 'Replied', 'follow_up_sent', 'final_reminder_sent', 'replied'] },
         humanTakeover: { $ne: true },
-        channel: { $in: ['email', 'both'] },
-        gmailThreadSubject: { $ne: null },
+        gmailThreadId: { $ne: null },
     })
 
     let repliesFound = 0
 
     for (const lead of activeLeads) {
         try {
-            const result = await checkForReply(lead.email, lead.gmailThreadSubject)
+            // Get all messages in the thread
+            const messages = await getThreadMessages(lead.gmailThreadId)
+            if (!messages || messages.length <= 1) continue  // Only our sent message, no reply
 
-            if (result.replied && result.replyText) {
-                // Check if we already logged this reply
-                const alreadyHandled = await Log.findOne({
-                    leadId: lead._id,
-                    direction: 'received',
-                }).sort({ createdAt: -1 })
+            // Find messages NOT from us (replies from the lead)
+            const replies = messages.filter(msg => {
+                const fromEmail = msg.from.match(/<(.+?)>/)?.[1] || msg.from
+                return fromEmail.toLowerCase() !== gmailStatus.email.toLowerCase()
+            })
 
-                if (alreadyHandled) continue
+            if (replies.length === 0) continue
 
-                await handleReply(lead, result.replyText)
-                repliesFound++
-            }
+            // Get the latest reply
+            const latestReply = replies[replies.length - 1]
+
+            // Check if we already logged this reply (by messageId)
+            const alreadyHandled = await Log.findOne({
+                leadId: lead._id,
+                direction: 'received',
+                detail: { $regex: latestReply.id }
+            })
+
+            if (alreadyHandled) continue
+
+            // New reply found!
+            await handleReply(lead, latestReply.snippet || latestReply.subject, latestReply.id)
+            repliesFound++
         } catch (err) {
             console.error(`[ReplyWorker] Error checking ${lead.email}:`, err.message)
         }
@@ -55,7 +75,7 @@ export const pollForReplies = async () => {
 /**
  * Handle a detected reply from a lead.
  */
-const handleReply = async (lead, replyText) => {
+const handleReply = async (lead, replyText, messageId) => {
     // Log the received reply
     await Log.create({
         leadId: lead._id,
@@ -67,9 +87,10 @@ const handleReply = async (lead, replyText) => {
         direction: 'received',
         subject: `Re: ${lead.gmailThreadSubject}`,
         body: replyText,
+        detail: `Gmail messageId: ${messageId}`,
     })
 
-    lead.status = 'replied'
+    lead.status = 'Replied'
     lead.lastRepliedAt = new Date()
     await lead.save()
 
@@ -96,31 +117,26 @@ const handleReply = async (lead, replyText) => {
 
 /**
  * Send an AI-generated reply to a lead's message.
- * Called from Bull queue after delay.
  */
 export const sendAiReply = async (leadId, replyText) => {
     const lead = await Lead.findById(leadId)
     if (!lead) return
 
-    // Guard — check if taken over while waiting
     if (lead.humanTakeover || ['needs_human', 'manual_conversation'].includes(lead.status)) {
         return
     }
 
-    // Re-check limit
     if (lead.aiReplyCount >= MAX_AI_REPLIES) {
         lead.status = 'needs_human'
         await lead.save()
         return
     }
 
-    // Generate AI response
     const responseBody = await generateOutreachMessage('reply_response', {
         name: lead.name || 'there',
         leadReply: replyText,
     })
 
-    // Send
     const result = await sendEmail({
         to: lead.email,
         subject: `Re: ${lead.gmailThreadSubject}`,
@@ -129,6 +145,9 @@ export const sendAiReply = async (leadId, replyText) => {
 
     if (result.success) {
         lead.aiReplyCount++
+
+        // Update threadId if new one returned (Gmail API)
+        if (result.threadId) lead.gmailThreadId = result.threadId
 
         await Log.create({
             leadId: lead._id,
@@ -145,7 +164,7 @@ export const sendAiReply = async (leadId, replyText) => {
         if (lead.aiReplyCount >= MAX_AI_REPLIES) {
             lead.status = 'needs_human'
         } else {
-            lead.status = 'replied'
+            lead.status = 'Replied'
         }
 
         await lead.save()
@@ -155,9 +174,8 @@ export const sendAiReply = async (leadId, replyText) => {
 }
 
 
-// ── Register the repeating job and AI reply handler ──
+// ── Register the repeating job ──
 export const initReplyWorker = () => {
-    // Add repeating job for reply polling (every 5 minutes)
     outreachQueue.add(
         { type: 'poll_replies' },
         {

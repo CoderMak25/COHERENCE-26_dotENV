@@ -43,6 +43,7 @@ const leadSchema = new mongoose.Schema({
 
     // Gmail thread tracking for reply detection
     gmailThreadSubject: { type: String, default: null },
+    gmailThreadId: { type: String, default: null },
 
     // Human takeover flag
     humanTakeover: { type: Boolean, default: false },
