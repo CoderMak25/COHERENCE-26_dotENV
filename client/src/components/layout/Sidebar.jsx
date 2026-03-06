@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 const navItems = [
     { path: '/', label: 'DASHBOARD', icon: 'solar:widget-5-linear', target: 'dashboard' },
     { path: '/leads', label: 'LEADS', icon: 'solar:users-group-two-rounded-linear', target: 'leads' },
-    { path: '/campaigns', label: 'WORKFLOWS', icon: 'solar:branching-paths-down-linear', target: 'workflow' },
+    { path: '/workflows', label: 'WORKFLOWS', icon: 'solar:branching-paths-down-linear', target: 'workflow' },
     { path: '/logs', label: 'LOGS', icon: 'solar:database-linear', target: 'logs' },
 ]
 
