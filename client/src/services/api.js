@@ -58,6 +58,11 @@ export const logsAPI = {
     getAll: (params) => api.get('/logs', { params })
 }
 
+// Dashboard
+export const dashboardAPI = {
+    getStats: () => api.get('/dashboard/stats')
+}
+
 // Users
 export const usersAPI = {
     getProfile: (params) => api.get('/users/profile', { params }),

@@ -161,11 +161,11 @@ export default function Profile() {
             <div className="brutalist-card p-6 mb-5 flex items-start gap-6">
                 {/* Avatar */}
                 <div className="flex flex-col items-center gap-3 flex-shrink-0">
-                    <div className="w-[96px] h-[96px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[5px_5px_0_#0D0D0D] flex items-center justify-center overflow-hidden">
+                    <div className="w-[96px] h-[96px] bg-[var(--accent)] border-2 border-[var(--border-bright)] shadow-[5px_5px_0_var(--shadow-color)] flex items-center justify-center overflow-hidden">
                         {user?.photoURL ? (
                             <img src={user.photoURL} alt="avatar" className="w-full h-full object-cover" />
                         ) : (
-                            <span className="font-syne text-4xl font-bold text-[#0D0D0D]">{initials}</span>
+                            <span className="font-syne text-4xl font-bold text-[var(--text-inverted)]">{initials}</span>
                         )}
                     </div>
                     {isEditing && (

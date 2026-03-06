@@ -1,28 +1,40 @@
 import { useState, useEffect, useRef } from 'react'
 import { Icon } from '@iconify/react'
-import { Link } from 'react-router-dom'
-import { MOCK_LIVE_FEED, FAKE_LOGS, MOCK_CAMPAIGNS } from '../data/mockData'
+import { Link, useNavigate } from 'react-router-dom'
+import { dashboardAPI } from '../services/api'
 
 export default function Dashboard() {
-    const [liveFeed, setLiveFeed] = useState(MOCK_LIVE_FEED)
+    const [stats, setStats] = useState(null)
+    const [loading, setLoading] = useState(true)
     const [chartRange, setChartRange] = useState('7D')
+    const [liveFeed, setLiveFeed] = useState([])
     const feedRef = useRef(null)
+    const navigate = useNavigate()
 
-    // Simulate live feed
     useEffect(() => {
-        const interval = setInterval(() => {
-            const randomLog = FAKE_LOGS[Math.floor(Math.random() * FAKE_LOGS.length)]
-            const now = new Date()
-            const timeStr = now.toTimeString().split(' ')[0]
-            setLiveFeed(prev => {
-                const newFeed = [{ time: timeStr, text: randomLog.text, status: randomLog.status, type: randomLog.type }, ...prev]
-                return newFeed.slice(0, 8)
-            })
-        }, 3500)
+        const fetchStats = async () => {
+            try {
+                setLoading(true)
+                const data = await dashboardAPI.getStats()
+                setStats(data)
+                // Build live feed from recent logs
+                const feed = (data.recentLogs || []).map(log => ({
+                    time: new Date(log.createdAt).toLocaleTimeString(),
+                    text: `${log.action} → ${log.leadName || 'SYSTEM'}`,
+                    status: log.status,
+                    type: log.status === 'SENT' || log.status === 'OK' ? 'sent' : log.status === 'FAILED' ? 'failed' : 'warning'
+                }))
+                setLiveFeed(feed)
+            } catch (err) {
+                console.error('Dashboard fetch error:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchStats()
+        const interval = setInterval(fetchStats, 15000) // auto-refresh every 15s
         return () => clearInterval(interval)
     }, [])
-
-
 
     const getBadgeClass = (type) => {
         if (type === 'sent' || type === 'ok') return 'badge-success'
@@ -31,39 +43,60 @@ export default function Dashboard() {
         return 'badge-cold'
     }
 
-    const barHeights = ['40%', '65%', '85%', '50%', '95%', '20%', '15%']
-    const barValues = [82, 130, 170, 100, 190, 40, 30]
-    const dayLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'Contacted': return 'badge-success'
+            case 'Replied': return 'badge-accent'
+            case 'New': return 'badge-warning'
+            case 'Converted': return 'badge-cold'
+            case 'Opened': return 'badge-success'
+            default: return 'badge-cold'
+        }
+    }
+
+    const now = new Date()
+    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: '2-digit' }).toUpperCase()
+
+    if (loading && !stats) {
+        return (
+            <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-base)]">
+                <span className="text-[var(--text-muted)] font-bold text-sm uppercase tracking-widest">Loading Dashboard...</span>
+            </div>
+        )
+    }
+
+    const p = stats?.pipeline || {}
+    const totalLeads = stats?.totalLeads || 0
+    const logSent = stats?.logStatusMap?.SENT || 0
+    const logFailed = stats?.logStatusMap?.FAILED || 0
+    const logOk = stats?.logStatusMap?.OK || 0
+    const totalLogs = stats?.totalLogs || 0
+    const chartData = stats?.chartData || []
+    const maxChart = Math.max(...chartData.map(d => d.value), 1)
+    const topLeads = stats?.topLeads || []
+    const workflowCounts = stats?.workflowCounts || []
 
     const statCards = [
-        { label: 'TOTAL LEADS', value: '2,847', icon: 'solar:users-group-two-rounded-linear', trend: '▲ 12%', trendUp: true, bottom: '148 NEW THIS WEEK' },
-        { label: 'EMAILS SENT', value: '14,203', icon: 'solar:letter-linear', trend: '▲ 8%', trendUp: true, bottom: 'TODAY: 342 SENT' },
-        { label: 'OPEN RATE', value: '34.2%', icon: 'solar:eye-linear', trend: '▲ 4.1%', trendUp: true, bottom: 'INDUSTRY AVG: 21%' },
-        { label: 'REPLY RATE', value: '8.7%', icon: 'solar:reply-linear', trend: '▼ 1.2%', trendUp: false, bottom: '93 REPLIES THIS WEEK' },
+        { label: 'TOTAL LEADS', value: totalLeads.toLocaleString(), icon: 'solar:users-group-two-rounded-linear', trend: `${p.new || 0} NEW`, trendUp: true, bottom: `${p.contacted || 0} CONTACTED`, link: '/leads' },
+        { label: 'LOGS RECORDED', value: totalLogs.toLocaleString(), icon: 'solar:letter-linear', trend: `${logSent} SENT`, trendUp: true, bottom: `${logFailed} FAILED`, link: '/logs' },
+        { label: 'REPLIED', value: (p.replied || 0).toLocaleString(), icon: 'solar:reply-linear', trend: `${totalLeads ? ((p.replied / totalLeads) * 100).toFixed(1) : 0}%`, trendUp: (p.replied || 0) > 0, bottom: 'OF ALL LEADS', link: '/leads' },
+        { label: 'CONVERTED', value: (p.converted || 0).toLocaleString(), icon: 'solar:check-circle-linear', trend: `${totalLeads ? ((p.converted / totalLeads) * 100).toFixed(1) : 0}%`, trendUp: (p.converted || 0) > 0, bottom: 'CONVERSION RATE', link: '/leads' },
     ]
 
     const pipeline = [
-        { stage: 'IMPORTED', count: '2,847', pct: 100, active: false },
-        { stage: 'CONTACTED', count: '1,420', pct: 50, active: true },
-        { stage: 'OPENED', count: '485', pct: 17, active: false },
-        { stage: 'REPLIED', count: '93', pct: 3.3, active: false },
-        { stage: 'CONVERTED', count: '32', pct: 1.1, active: false },
+        { stage: 'NEW', count: p.new || 0, pct: totalLeads ? Math.round((p.new / totalLeads) * 100) : 0 },
+        { stage: 'CONTACTED', count: p.contacted || 0, pct: totalLeads ? Math.round((p.contacted / totalLeads) * 100) : 0, active: true },
+        { stage: 'OPENED', count: p.opened || 0, pct: totalLeads ? Math.round((p.opened / totalLeads) * 100) : 0 },
+        { stage: 'REPLIED', count: p.replied || 0, pct: totalLeads ? Math.round((p.replied / totalLeads) * 100) : 0 },
+        { stage: 'CONVERTED', count: p.converted || 0, pct: totalLeads ? Math.round((p.converted / totalLeads) * 100) : 0 },
     ]
 
     const funnel = [
-        { label: 'TOTAL LEADS', count: '2,847', pct: 100 },
-        { label: 'CONTACTED', count: '1,420', pct: 50 },
-        { label: 'OPENED', count: '485', pct: 17 },
-        { label: 'REPLIED', count: '93', pct: 3.3 },
-        { label: 'CONVERTED', count: '32', pct: 1.1 },
-    ]
-
-    const topLeads = [
-        { name: 'Rahul Sharma', company: 'TechCorp', status: 'Replied', action: 'Email reply received', time: '2h ago', badge: 'badge-accent' },
-        { name: 'Priya Mehta', company: 'InnovateX', status: 'Opened', action: 'Opened follow-up email', time: '4h ago', badge: 'badge-success' },
-        { name: 'James Walker', company: 'Globex', status: 'Contacted', action: 'Initial email sent', time: '6h ago', badge: 'badge-success' },
-        { name: 'Sara Kim', company: 'Nexus', status: 'Converted', action: 'Deal closed', time: '1d ago', badge: 'badge-cold' },
-        { name: 'Tom Nguyen', company: 'ClearFlow', status: 'Replied', action: 'Meeting scheduled', time: '1d ago', badge: 'badge-accent' },
+        { label: 'TOTAL LEADS', count: totalLeads, pct: 100 },
+        { label: 'CONTACTED', count: p.contacted || 0, pct: totalLeads ? Math.round((p.contacted / totalLeads) * 100) : 0 },
+        { label: 'OPENED', count: p.opened || 0, pct: totalLeads ? Math.round((p.opened / totalLeads) * 100) : 0 },
+        { label: 'REPLIED', count: p.replied || 0, pct: totalLeads ? Math.round((p.replied / totalLeads) * 100) : 0 },
+        { label: 'CONVERTED', count: p.converted || 0, pct: totalLeads ? Math.round((p.converted / totalLeads) * 100) : 0 },
     ]
 
     const insights = [
@@ -72,41 +105,34 @@ export default function Dashboard() {
         { icon: 'solar:restart-linear', text: 'FOLLOW-UP ON DAY 3 INCREASES REPLY RATE BY 40%', sub: '67% of your replies come from follow-ups' },
     ]
 
-    const now = new Date()
-    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: '2-digit' }).toUpperCase()
-
     return (
         <div className="absolute inset-0 overflow-y-auto p-[28px] bg-[var(--bg-base)] animate-stagger">
 
-            {/* ═══════════════════════════════════════════
-                1️⃣ PAGE HEADER
-               ═══════════════════════════════════════════ */}
+            {/* 1️⃣ PAGE HEADER */}
             <div className="flex items-start justify-between mb-6">
                 <div>
                     <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest block mb-1">{dateStr}</span>
-                    <h2 className="font-syne text-2xl font-bold uppercase tracking-tight text-[var(--text-primary)] mb-1">WELCOME BACK, ALEX</h2>
-                    <span className="text-[11px] font-bold text-[var(--text-secondary)] tracking-widest">HERE'S WHAT'S HAPPENING WITH YOUR OUTREACH TODAY</span>
+                    <h2 className="font-syne text-2xl font-bold uppercase tracking-tight text-[var(--text-primary)] mb-1">COMMAND CENTER</h2>
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)] tracking-widest">LIVE DATA FROM YOUR DATABASE</span>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="brutalist-panel px-3 py-1.5 flex items-center gap-2">
                         <span className="text-[var(--success)] text-[8px] animate-blink status-dot">●</span>
-                        <span className="text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-widest">3 WORKFLOWS RUNNING</span>
+                        <span className="text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-widest">{workflowCounts.length} WORKFLOWS ACTIVE</span>
                     </div>
-                    <button className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
-                        <Icon icon="solar:play-bold" className="mr-2 text-xs" /> RUN ALL ACTIVE
+                    <button onClick={() => navigate('/workflows')} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
+                        <Icon icon="solar:play-bold" className="mr-2 text-xs" /> VIEW WORKFLOWS
                     </button>
-                    <button className="btn-base btn-accent">
-                        <Icon icon="solar:add-circle-bold" className="mr-2 text-xs" /> NEW CAMPAIGN
+                    <button onClick={() => navigate('/leads')} className="btn-base btn-accent">
+                        <Icon icon="solar:add-circle-bold" className="mr-2 text-xs" /> VIEW LEADS
                     </button>
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════
-                2️⃣ STAT CARDS
-               ═══════════════════════════════════════════ */}
+            {/* 2️⃣ STAT CARDS */}
             <div className="grid grid-cols-4 gap-4 mb-6">
                 {statCards.map((card) => (
-                    <div key={card.label} className="brutalist-card p-5 flex flex-col relative overflow-hidden">
+                    <div key={card.label} onClick={() => navigate(card.link)} className="brutalist-card p-5 flex flex-col relative overflow-hidden cursor-pointer hover:-translate-y-[2px] transition-transform">
                         <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-[var(--accent)]" />
                         <div className="flex justify-between items-start mb-2">
                             <span className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold">{card.label}</span>
@@ -119,20 +145,18 @@ export default function Dashboard() {
                 ))}
             </div>
 
-            {/* ═══════════════════════════════════════════
-                3️⃣ PIPELINE TRACKER
-               ═══════════════════════════════════════════ */}
+            {/* 3️⃣ PIPELINE TRACKER */}
             <div className="mb-6">
                 <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold mb-3">LEAD PIPELINE</h3>
                 <div className="flex items-center w-full gap-3">
-                    {pipeline.map((p, i) => (
-                        <div key={p.stage} className="contents">
-                            <div className={`pipeline-block ${p.active ? 'active' : ''}`}>
-                                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">{p.stage}</span>
-                                <span className="font-syne text-2xl font-bold text-[var(--text-primary)] leading-none mb-1">{p.count}</span>
-                                <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest mb-2">{p.pct}%</span>
+                    {pipeline.map((pp, i) => (
+                        <div key={pp.stage} className="contents">
+                            <div className={`pipeline-block ${pp.active ? 'active' : ''}`}>
+                                <span className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-1">{pp.stage}</span>
+                                <span className="font-syne text-2xl font-bold text-[var(--text-primary)] leading-none mb-1">{pp.count}</span>
+                                <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest mb-2">{pp.pct}%</span>
                                 <div className="w-full h-[4px] bg-[var(--border)] border-y border-[var(--border-bright)]">
-                                    <div className={`h-full progress-fill ${p.active ? 'bg-accent' : 'bg-[var(--text-muted)]'}`} style={{ width: `${p.pct}%` }} />
+                                    <div className={`h-full progress-fill ${pp.active ? 'bg-accent' : 'bg-[var(--text-muted)]'}`} style={{ width: `${pp.pct}%` }} />
                                 </div>
                             </div>
                             {i < pipeline.length - 1 && <span className="pipeline-arrow">──▶</span>}
@@ -141,24 +165,22 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════
-                4️⃣ WEEKLY ACTIVITY + LIVE FEED
-               ═══════════════════════════════════════════ */}
+            {/* 4️⃣ WEEKLY ACTIVITY + LIVE FEED */}
             <div className="flex gap-4 h-[300px] mb-6">
                 {/* LEFT: ACTIVITY CHART */}
                 <div className="flex-[0.6] brutalist-card p-5 flex flex-col">
                     <div className="flex justify-between items-center mb-4">
                         <div>
                             <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold">OUTREACH ACTIVITY</h3>
-                            <span className="text-[9px] text-[var(--text-muted)] tracking-widest font-bold">LAST 7 DAYS</span>
+                            <span className="text-[9px] text-[var(--text-muted)] tracking-widest font-bold">LAST 7 DAYS — LIVE DATA</span>
                         </div>
                         <div className="flex gap-1">
-                            {['7D', '30D', '90D'].map(r => (
+                            {['7D'].map(r => (
                                 <button
                                     key={r}
                                     onClick={() => setChartRange(r)}
                                     className={`border-2 border-[var(--border-bright)] text-[10px] font-bold px-2.5 py-0.5 transition-transform hover:-translate-y-[1px] ${chartRange === r
-                                        ? 'bg-[var(--accent)] text-[#0D0D0D] border-[#0D0D0D] shadow-[2px_2px_0_#0D0D0D]'
+                                        ? 'bg-[var(--accent)] text-[var(--text-inverted)] border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)]'
                                         : 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[2px_2px_0_var(--shadow-color)]'
                                         }`}
                                 >
@@ -194,6 +216,9 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <div ref={feedRef} className="flex-1 overflow-y-auto bg-[var(--bg-surface)]">
+                        {liveFeed.length === 0 && (
+                            <div className="p-5 text-center text-[11px] text-[var(--text-muted)] font-bold">No recent activity</div>
+                        )}
                         {liveFeed.map((entry, i) => (
                             <div key={i} className="h-[48px] px-5 border-b border-[var(--border)] flex items-center hover:bg-[var(--bg-hover)] animate-slide-down">
                                 <span className="text-[11px] text-[var(--text-muted)] w-[65px] flex-shrink-0 font-bold">{entry.time}</span>
@@ -205,9 +230,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════
-                5️⃣ CONVERSION FUNNEL
-               ═══════════════════════════════════════════ */}
+            {/* 5️⃣ CONVERSION FUNNEL */}
             <div className="brutalist-card p-5 mb-6">
                 <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold mb-4">CONVERSION FUNNEL</h3>
                 <div className="flex flex-col gap-3">
@@ -227,41 +250,34 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════
-                6️⃣ ACTIVE CAMPAIGNS STRIP
-               ═══════════════════════════════════════════ */}
+            {/* 6️⃣ ACTIVE WORKFLOWS */}
             <div className="mb-6">
-                <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold mb-3">ACTIVE CAMPAIGNS</h3>
+                <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold mb-3">ACTIVE WORKFLOWS</h3>
                 <div className="flex gap-4 overflow-x-auto pb-2">
-                    {MOCK_CAMPAIGNS.map((c) => {
-                        const isActive = c.status === 'Active'
-                        const isPaused = c.status === 'Paused'
-                        return (
-                            <div key={c._id} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3">
-                                <div className="flex justify-between items-start">
-                                    <span className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest">{c.name}</span>
-                                    <span className={`badge ${isActive ? 'badge-success' : isPaused ? 'badge-warning' : 'badge-cold'}`}>{c.status.toUpperCase()}</span>
-                                </div>
-                                <div className="w-full h-[6px] bg-[var(--bg-raised)] border-2 border-[var(--border-bright)]">
-                                    <div className="h-full bg-accent" style={{ width: `${c.stats.progress}%` }} />
-                                </div>
-                                <div className="flex gap-4 text-[10px] font-bold tracking-widest">
-                                    <span className="text-[var(--text-muted)]">SENT: <span className="text-[var(--text-primary)]">{c.stats.sent}</span></span>
-                                    <span className="text-[var(--text-muted)]">OPENS: <span className="text-[var(--text-primary)]">{c.stats.opened}</span></span>
-                                    <span className="text-[var(--text-muted)]">REPLIES: <span className="text-[var(--text-primary)]">{c.stats.replied}</span></span>
-                                </div>
-                                <button className={`btn-base text-[9px] py-[5px] w-full ${isActive ? 'bg-[var(--bg-raised)] text-[var(--text-primary)]' : 'btn-accent'}`}>
-                                    {isActive ? 'PAUSE' : isPaused ? 'RESUME' : 'LAUNCH'}
-                                </button>
+                    {workflowCounts.length === 0 && (
+                        <div className="brutalist-card p-4 min-w-[280px] text-center text-[11px] text-[var(--text-muted)] font-bold">No active workflows</div>
+                    )}
+                    {workflowCounts.map((wf) => (
+                        <div key={wf._id} onClick={() => navigate('/workflows')} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3 cursor-pointer hover:-translate-y-[2px] transition-transform">
+                            <div className="flex justify-between items-start">
+                                <span className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest">{wf._id}</span>
+                                <span className="badge badge-success">ACTIVE</span>
                             </div>
-                        )
-                    })}
+                            <div className="w-full h-[6px] bg-[var(--bg-raised)] border-2 border-[var(--border-bright)]">
+                                <div className="h-full bg-accent" style={{ width: '100%' }} />
+                            </div>
+                            <div className="flex gap-4 text-[10px] font-bold tracking-widest">
+                                <span className="text-[var(--text-muted)]">LEADS: <span className="text-[var(--text-primary)]">{wf.count}</span></span>
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); navigate('/workflows') }} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] w-full">
+                                VIEW WORKFLOW
+                            </button>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════
-                7️⃣ TOP LEADS TABLE
-               ═══════════════════════════════════════════ */}
+            {/* 7️⃣ TOP LEADS TABLE */}
             <div className="brutalist-table-container mb-6">
                 <div className="px-5 py-3 bg-[var(--bg-raised)] border-b-2 border-[var(--border-bright)] flex justify-between items-center">
                     <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold">TOP LEADS ACTIVITY</h3>
@@ -272,23 +288,23 @@ export default function Dashboard() {
                         <tr>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">LEAD</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">STATUS</th>
+                            <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">WORKFLOW</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">LAST ACTION</th>
-                            <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">TIME</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold text-center">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody className="text-[11px] font-bold">
                         {topLeads.map((lead, i) => (
-                            <tr key={i} className={`hover:bg-[var(--bg-hover)] transition-colors duration-75 ${i % 2 === 0 ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-base)]'}`}>
+                            <tr key={lead._id} className={`hover:bg-[var(--bg-hover)] transition-colors duration-75 ${i % 2 === 0 ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-base)]'}`}>
                                 <td className="p-[12px_16px]">
                                     <span className="text-[var(--text-primary)]">{lead.name}</span>
-                                    <span className="text-[var(--text-muted)] ml-2">@ {lead.company}</span>
+                                    <span className="text-[var(--text-muted)] ml-2">@ {lead.company || '—'}</span>
                                 </td>
-                                <td className="p-[12px_16px]"><span className={`badge ${lead.badge}`}>{lead.status.toUpperCase()}</span></td>
-                                <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.action}</td>
-                                <td className="p-[12px_16px] text-[var(--text-muted)]">{lead.time}</td>
+                                <td className="p-[12px_16px]"><span className={`badge ${getStatusBadge(lead.status)}`}>{(lead.status || 'NEW').toUpperCase()}</span></td>
+                                <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.workflow || '—'}</td>
+                                <td className="p-[12px_16px] text-[var(--text-muted)]">{lead.lastAction || 'No Actions Yet'}</td>
                                 <td className="p-[12px_16px] text-center">
-                                    <button className="w-[28px] h-[28px] page-btn bg-[var(--bg-raised)] inline-flex items-center justify-center text-[var(--text-secondary)] hover:-translate-y-[1px]">
+                                    <button onClick={() => navigate('/leads')} className="w-[28px] h-[28px] page-btn bg-[var(--bg-raised)] inline-flex items-center justify-center text-[var(--text-secondary)] hover:-translate-y-[1px]">
                                         <Icon icon="solar:eye-linear" className="text-sm" />
                                     </button>
                                 </td>
@@ -298,9 +314,7 @@ export default function Dashboard() {
                 </table>
             </div>
 
-            {/* ═══════════════════════════════════════════
-                8️⃣ AI INSIGHTS PANEL
-               ═══════════════════════════════════════════ */}
+            {/* 8️⃣ AI INSIGHTS PANEL */}
             <div className="mb-6">
                 <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold mb-3">
                     <Icon icon="solar:magic-stick-3-linear" className="inline mr-2 text-accent text-sm" />
@@ -320,9 +334,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ═══════════════════════════════════════════
-                9️⃣ SYSTEM STATUS BAR
-               ═══════════════════════════════════════════ */}
+            {/* 9️⃣ SYSTEM STATUS BAR */}
             <div className="h-[36px] bg-[var(--bg-topbar)] border-t-2 border-[var(--border-bright)] flex items-center justify-between px-5 mb-2">
                 <div className="flex items-center gap-5">
                     <div className="flex items-center gap-1.5">
@@ -334,17 +346,15 @@ export default function Dashboard() {
                         <span className="text-[10px] font-bold text-[var(--text-secondary)] tracking-widest">REDIS</span>
                     </div>
                     <span className="text-[var(--border-bright)]">|</span>
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">QUEUE: 48 JOBS</span>
-                    <span className="text-[10px] font-bold text-[var(--warning)] tracking-widest">THROTTLE: 10/HR</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">LEADS: {totalLeads}</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">LOGS: {totalLogs}</span>
                 </div>
                 <div className="flex items-center gap-5">
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">LAST SYNC: 09:42:33</span>
-                    <span className="text-[10px] font-bold text-[var(--success)] tracking-widest">UPTIME: 99.98%</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">LAST SYNC: {new Date().toLocaleTimeString()}</span>
+                    <span className="text-[10px] font-bold text-[var(--success)] tracking-widest">LIVE</span>
                     <span className="animate-blink text-[var(--text-primary)]">▮</span>
                 </div>
             </div>
-
-
 
         </div>
     )

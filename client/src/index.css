@@ -114,17 +114,17 @@ header {
 
 .btn-accent {
   background-color: var(--accent) !important;
-  color: #0D0D0D !important;
-  border: 2px solid #0D0D0D !important;
-  box-shadow: 3px 3px 0px #0D0D0D !important;
+  color: var(--text-inverted) !important;
+  border: 2px solid var(--border-bright) !important;
+  box-shadow: 3px 3px 0px var(--shadow-color) !important;
 }
 
 .btn-accent:hover {
-  box-shadow: 5px 5px 0px #0D0D0D !important;
+  box-shadow: 5px 5px 0px var(--shadow-color) !important;
 }
 
 .btn-accent:active {
-  box-shadow: 1px 1px 0px #0D0D0D !important;
+  box-shadow: 1px 1px 0px var(--shadow-color) !important;
 }
 
 /* Inputs, Selects, Textareas */
@@ -161,7 +161,7 @@ input[type="checkbox"]::before {
   height: 8px;
   transform: scale(0);
   background-color: var(--accent);
-  border: 2px solid #0D0D0D;
+  border: 2px solid var(--border-bright);
 }
 
 input[type="checkbox"]:checked {
@@ -193,62 +193,68 @@ input[type="checkbox"]:checked::before {
 
 /* Sidebar Container */
 .sidebar-container {
-    transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Sidebar Navigation */
 .sidebar-nav-btn {
-    position: relative;
-    border-left: 0px solid transparent;
-    transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease !important;
+  position: relative;
+  border-left: 0px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease !important;
 }
+
 .sidebar-nav-active {
-    background-color: var(--accent) !important;
-    border-right: 2px solid var(--border-bright) !important;
-    box-shadow: none !important;
+  background-color: var(--accent) !important;
+  border-right: 2px solid var(--border-bright) !important;
+  box-shadow: none !important;
 }
-.sidebar-nav-active span, .sidebar-nav-active svg {
-    color: #0D0D0D !important;
-    font-weight: 700 !important;
+
+.sidebar-nav-active span,
+.sidebar-nav-active svg {
+  color: var(--text-inverted) !important;
+  font-weight: 700 !important;
 }
+
 .sidebar-nav-btn:not(.sidebar-nav-active):hover {
-    background-color: var(--bg-hover) !important;
-    border-left: 3px solid var(--accent) !important;
+  background-color: var(--bg-hover) !important;
+  border-left: 3px solid var(--accent) !important;
 }
+
 .sidebar-nav-btn:not(.sidebar-nav-active):active {
-    transform: translateX(2px) !important;
+  transform: translateX(2px) !important;
 }
 
 /* Sidebar Tooltips (collapsed state) */
 .sidebar-tooltip {
-    pointer-events: none;
-    position: absolute;
-    left: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%) translateX(-4px);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    border: 2px solid var(--border-bright);
-    box-shadow: 3px 3px 0px var(--shadow-color);
-    padding: 5px 10px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    opacity: 0;
-    z-index: 100;
-    transition: opacity 150ms ease, transform 150ms ease !important;
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 2px solid var(--border-bright);
+  box-shadow: 3px 3px 0px var(--shadow-color);
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  z-index: 100;
+  transition: opacity 150ms ease, transform 150ms ease !important;
 }
+
 .sidebar-nav-btn:hover .sidebar-tooltip,
 .group:hover .sidebar-tooltip {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0px);
+  opacity: 1;
+  transform: translateY(-50%) translateX(0px);
 }
 
 /* Sidebar Collapse Button */
 .sidebar-collapse-btn {
-    transition: background-color 150ms ease !important;
+  transition: background-color 150ms ease !important;
 }
 
 /* Legacy nav-btn compat (for any remaining usage) */
@@ -261,7 +267,7 @@ input[type="checkbox"]:checked::before {
 
 .nav-btn.active span,
 .nav-btn.active .nav-icon {
-  color: #0D0D0D !important;
+  color: var(--text-inverted) !important;
   font-weight: 700 !important;
 }
 
@@ -285,23 +291,23 @@ input[type="checkbox"]:checked::before {
 
 .badge-success {
   background: var(--success);
-  color: #0D0D0D;
-  border: 2px solid #0D0D0D;
-  box-shadow: 2px 2px 0 #0D0D0D;
+  color: var(--text-inverted);
+  border: 2px solid var(--border-bright);
+  box-shadow: 2px 2px 0 var(--shadow-color);
 }
 
 .badge-warning {
   background: var(--warning);
-  color: #0D0D0D;
-  border: 2px solid #0D0D0D;
-  box-shadow: 2px 2px 0 #0D0D0D;
+  color: var(--text-inverted);
+  border: 2px solid var(--border-bright);
+  box-shadow: 2px 2px 0 var(--shadow-color);
 }
 
 .badge-danger {
   background: var(--danger);
   color: #FFFFFF;
-  border: 2px solid #0D0D0D;
-  box-shadow: 2px 2px 0 #0D0D0D;
+  border: 2px solid var(--border-bright);
+  box-shadow: 2px 2px 0 var(--shadow-color);
 }
 
 .badge-cold {
@@ -313,9 +319,9 @@ input[type="checkbox"]:checked::before {
 
 .badge-accent {
   background: var(--accent);
-  color: #0D0D0D;
-  border: 2px solid #0D0D0D;
-  box-shadow: 2px 2px 0 #0D0D0D;
+  color: var(--text-inverted);
+  border: 2px solid var(--border-bright);
+  box-shadow: 2px 2px 0 var(--shadow-color);
 }
 
 /* Pipeline Tracker */
@@ -331,16 +337,16 @@ input[type="checkbox"]:checked::before {
 
 .pipeline-block.active {
   background: var(--accent);
-  border: 2px solid #0D0D0D;
-  box-shadow: 4px 4px 0px #0D0D0D;
+  border: 2px solid var(--border-bright);
+  box-shadow: 4px 4px 0px var(--shadow-color);
 }
 
 .pipeline-block.active * {
-  color: #0D0D0D !important;
+  color: var(--text-inverted) !important;
 }
 
 .pipeline-block.active .progress-fill {
-  background-color: #0D0D0D !important;
+  background-color: var(--text-inverted) !important;
 }
 
 .pipeline-arrow {
@@ -406,9 +412,9 @@ input[type="checkbox"]:checked::before {
 
 .page-btn.active {
   background: var(--accent) !important;
-  color: #0D0D0D !important;
-  border: 2px solid #0D0D0D !important;
-  box-shadow: 2px 2px 0px #0D0D0D !important;
+  color: var(--text-inverted) !important;
+  border: 2px solid var(--border-bright) !important;
+  box-shadow: 2px 2px 0px var(--shadow-color) !important;
   font-weight: 700 !important;
 }
 

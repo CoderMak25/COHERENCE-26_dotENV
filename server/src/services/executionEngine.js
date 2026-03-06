@@ -2,10 +2,162 @@ import Lead from '../models/Lead.js'
 import Workflow from '../models/Workflow.js'
 import Campaign from '../models/Campaign.js'
 import Log from '../models/Log.js'
-import { generateMessage } from './aiService.js'
+import { generateMessage, generateOutreachMessage } from './aiService.js'
 import { sendEmail } from './emailService.js'
 import { checkThrottle } from './throttleService.js'
+import { validateAndRoute } from './leadValidator.js'
 import { outreachQueue } from '../queues/outreachQueue.js'
+
+// ── Constants ──
+const MAX_AI_REPLIES = 3
+const FOLLOW_UP_DELAY_DAYS = [2, 4]
+const FINAL_REMINDER_DELAY_DAYS = [3, 5]
+
+// ── Helper: random int in range ──
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+
+// ── Helper: days since a date ──
+const daysSince = (dt) => {
+    if (!dt) return 9999
+    return Math.floor((Date.now() - new Date(dt).getTime()) / (1000 * 60 * 60 * 24))
+}
+
+// ── Helper: get subject line ──
+const getSubject = (step, lead) => {
+    const first = (lead.name || '').split(' ')[0] || 'there'
+    const co = lead.company ? ` — ${lead.company}` : ''
+    const subjects = {
+        initial_outreach: `Quick intro${co}`,
+        follow_up: `Following up, ${first}`,
+        final_reminder: 'One last note',
+    }
+    return subjects[step] || 'Hello'
+}
+
+// ── Helper: log an outreach action ──
+const logAction = async (lead, step, channel, direction, subject, body, status = 'SENT', errorMsg = null) => {
+    await Log.create({
+        leadId: lead._id,
+        leadName: lead.name,
+        action: `OUTREACH_${step.toUpperCase()}`,
+        status,
+        detail: subject,
+        step,
+        channel,
+        direction,
+        subject,
+        body,
+        errorMsg,
+    })
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  SIMPLE WORKFLOW: Trigger → AI Write Email → Send → End
+//  SSE version — streams events to frontend in real-time
+// ═══════════════════════════════════════════════════════
+
+export const runOutreachWorkflowSSE = async (send, isAborted) => {
+    let sent = 0, failed = 0, skipped = 0
+
+    // STEP 1: TRIGGER — Fetch ALL leads from MongoDB
+    const leads = await Lead.find({})
+    send('log', { tag: 'TRG', message: `Trigger fired — found ${leads.length} leads in database` })
+
+    for (let i = 0; i < leads.length; i++) {
+        // Check if user pressed STOP
+        if (isAborted()) {
+            send('log', { tag: 'SYS', message: `Stopped by user after ${sent} emails sent` })
+            break
+        }
+
+        const lead = leads[i]
+
+        // Skip leads without email
+        if (!lead.email) {
+            skipped++
+            send('log', { tag: '--', message: `Skipped ${lead.name} — no email address` })
+            continue
+        }
+
+        const firstName = (lead.name || 'there').split(' ')[0]
+        send('log', { tag: 'AI', message: `[${i + 1}/${leads.length}] Writing AI email for ${lead.name}...` })
+
+        try {
+            // STEP 2: AI WRITE EMAIL — Groq generates personalized message
+            const aiBody = await generateOutreachMessage('initial_outreach', {
+                name: lead.name || 'there',
+                company: lead.company || '',
+                position: lead.position || '',
+                industry: lead.industry || '',
+            })
+
+            const subject = lead.company
+                ? `Quick intro — ${lead.company}`
+                : `Hey ${firstName}, quick thought`
+
+            // STEP 3: SEND INTRO EMAIL — Gmail SMTP
+            send('log', { tag: 'OUT', message: `[${i + 1}/${leads.length}] Sending to ${lead.email}...` })
+
+            const emailResult = await sendEmail({
+                to: lead.email,
+                subject,
+                body: aiBody,
+            })
+
+            if (emailResult.success) {
+                await Lead.updateOne({ _id: lead._id }, {
+                    $set: {
+                        status: 'Contacted',
+                        lastContactedAt: new Date(),
+                        lastContact: new Date(),
+                        gmailThreadSubject: subject,
+                    }
+                })
+
+                await Log.create({
+                    leadId: lead._id,
+                    leadName: lead.name,
+                    action: 'EMAIL_SENT',
+                    status: 'SENT',
+                    detail: `To: ${lead.email} | Subject: ${subject}`,
+                    step: 'initial_outreach',
+                    channel: 'email',
+                    direction: 'sent',
+                    subject,
+                    body: aiBody,
+                    latencyMs: emailResult.latencyMs,
+                })
+
+                sent++
+                send('log', { tag: 'OUT', message: `Email sent to ${lead.name} (${lead.email}) — ${emailResult.latencyMs}ms` })
+            } else {
+                failed++
+                send('log', { tag: 'ERR', message: `Failed: ${lead.name} (${lead.email}) — ${emailResult.error}` })
+            }
+
+            // Send progress update
+            send('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
+
+            // Small delay between emails (1-2 seconds)
+            await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000))
+
+        } catch (err) {
+            failed++
+            send('log', { tag: 'ERR', message: `Error: ${lead.name} — ${err.message}` })
+            send('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
+        }
+    }
+
+    // STEP 4: END
+    send('log', { tag: 'END', message: `Complete — ${sent} emails sent, ${failed} failed, ${skipped} skipped` })
+    send('progress', { sent, failed, skipped, current: leads.length, total: leads.length })
+}
+
+
+// ═══════════════════════════════════════════════════════
+//  EXISTING: Process a workflow node job (Bull queue)
+// ═══════════════════════════════════════════════════════
 
 export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => {
     const lead = await Lead.findById(leadId)
@@ -53,10 +205,9 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
                 status: 'PENDING',
                 detail: `Rate limit exceeded, requeuing`
             })
-            // Requeue with delay
             await outreachQueue.add(
                 { leadId, workflowId, nodeId, campaignId },
-                { delay: 60000 } // retry in 1 minute
+                { delay: 60000 }
             )
             return
         }
@@ -67,7 +218,6 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
             let subject = node.config?.subject || ''
             let body = node.config?.body || ''
 
-            // If no body, generate via AI
             if (!body) {
                 try {
                     const generated = await generateMessage(lead, 'email')
@@ -85,7 +235,6 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
                 }
             }
 
-            // Replace template variables
             subject = subject.replace(/\{\{first_name\}\}/g, lead.name.split(' ')[0])
                 .replace(/\{\{company\}\}/g, lead.company || '')
                 .replace(/\{\{name\}\}/g, lead.name)
@@ -135,7 +284,6 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
             const delayDays = node.config?.delayDays || 1
             let delayMs = delayDays * 24 * 60 * 60 * 1000
 
-            // Apply randomization
             if (node.config?.randomize) {
                 const pct = (node.config.randomizePct || 20) / 100
                 const variance = delayMs * pct
@@ -150,7 +298,6 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
                 detail: `wait: ${delayDays} days`
             })
 
-            // Queue next node after delay
             const nextNode = workflow.nodes[nodeIndex + 1]
             if (nextNode) {
                 lead.currentStep = nodeIndex + 1
@@ -161,7 +308,7 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
                     { delay: delayMs }
                 )
             }
-            return // Don't advance to next node below
+            return
         }
 
         case 'condition': {
@@ -179,7 +326,6 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
                 detail: `${conditionField} ${passed ? '=' : '≠'} ${conditionVal}`
             })
 
-            // Find YES/NO branch edges
             const edges = workflow.edges || []
             const yesEdge = edges.find(e => e.source === node.id && (e.label === 'YES' || e.label === 'yes'))
             const noEdge = edges.find(e => e.source === node.id && (e.label === 'NO' || e.label === 'no'))
@@ -191,7 +337,7 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
                     await outreachQueue.add({ leadId, workflowId, nodeId: nextNode.id, campaignId })
                 }
             }
-            return // Don't advance linearly
+            return
         }
 
         case 'linkedin': {
@@ -227,7 +373,7 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
         }
     }
 
-    // Advance to next node (linear progression)
+    // Advance to next node
     const nextIndex = nodeIndex + 1
     if (workflow && nextIndex < workflow.nodes.length) {
         lead.currentStep = nextIndex

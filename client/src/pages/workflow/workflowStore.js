@@ -53,10 +53,23 @@ const LOG_MESSAGES = {
 // ─── Multi-output node types ───
 const MULTI_OUTPUT_TYPES = ['condition', 'ab_split', 'wait_event', 'unsubscribe_check']
 
+// ── Default 4-node workflow ──
+const DEFAULT_NODES = [
+    { id: 'n_102_mmf0zd70', type: 'workflowNode', position: { x: 91.75, y: 50.84 }, data: { nodeType: 'trigger_manual', label: 'Manual Run', enabled: true, config: {} } },
+    { id: 'n_104_mmf0zyz7', type: 'workflowNode', position: { x: 91.75, y: 176.46 }, data: { nodeType: 'ai_generate', label: 'AI Write', enabled: true, config: { model: 'claude-sonnet', tone: 'professional', prompt: '', maxTokens: 500 } } },
+    { id: 'n_105_mmf1077r', type: 'workflowNode', position: { x: 91.75, y: 299.23 }, data: { nodeType: 'send_email', label: 'Send Email', enabled: true, config: { from: '', replyTo: '', subject: '', template: 'intro', aiPersonalize: false } } },
+    { id: 'n_106_mmf10i3m', type: 'workflowNode', position: { x: 90.80, y: 433.72 }, data: { nodeType: 'end', label: 'End', enabled: true, config: { status: 'completed', note: '' } } },
+]
+const DEFAULT_EDGES = [
+    { id: 'e_mmf10plj', source: 'n_102_mmf0zd70', target: 'n_104_mmf0zyz7', type: 'smoothstep', animated: true },
+    { id: 'e_mmf10rhv', source: 'n_104_mmf0zyz7', target: 'n_105_mmf1077r', type: 'smoothstep', animated: true },
+    { id: 'e_mmf10tkn', source: 'n_105_mmf1077r', target: 'n_106_mmf10i3m', type: 'smoothstep', animated: true },
+]
+
 const useWorkflowStore = create((set, get) => ({
-    // ── Canvas state ──
-    nodes: [],
-    edges: [],
+    // ── Canvas state (pre-loaded with default workflow) ──
+    nodes: DEFAULT_NODES,
+    edges: DEFAULT_EDGES,
     workflowName: 'Cold Outreach Sequence',
 
     // ── UI state ──
@@ -72,6 +85,7 @@ const useWorkflowStore = create((set, get) => ({
     activeNodeId: null,
     logs: [],
     showLog: true,
+    _eventSource: null,
 
     // ── History ──
     history: [],
@@ -285,7 +299,7 @@ const useWorkflowStore = create((set, get) => ({
         }
     },
 
-    // ── Run Simulation ──
+    // ── Run Simulation (offline preview) ──
     runSimulation: async () => {
         const { nodes, edges } = get()
         if (nodes.length === 0) return
@@ -365,6 +379,53 @@ const useWorkflowStore = create((set, get) => ({
         }
 
         set({ running: false, activeNodeId: null })
+    },
+
+    // ── Run Backend Workflow (SSE real-time streaming) ──
+    runBackendWorkflow: () => {
+        if (get().running) return // guard: execute only once
+
+        set({ running: true, logs: [], showLog: true, runCount: get().runCount + 1 })
+
+        const time = () => new Date().toLocaleTimeString('en-US', { hour12: false })
+        get().appendLog({ time: time(), tag: 'SYS', message: 'Connecting to backend...' })
+
+        const es = new EventSource('http://localhost:5000/api/workflows/run')
+        set({ _eventSource: es })
+
+        es.addEventListener('log', (e) => {
+            const data = JSON.parse(e.data)
+            get().appendLog({ time: time(), tag: data.tag || '--', message: data.message })
+        })
+
+        es.addEventListener('progress', (e) => {
+            // Progress events available for future use (progress bar, etc.)
+        })
+
+        es.addEventListener('done', (e) => {
+            es.close()
+            set({ running: false, _eventSource: null })
+        })
+
+        es.addEventListener('error', (e) => {
+            // SSE error — either server closed or network error
+            es.close()
+            if (get().running) {
+                get().appendLog({ time: time(), tag: 'SYS', message: 'Connection closed' })
+            }
+            set({ running: false, _eventSource: null })
+        })
+    },
+
+    // ── Stop execution ──
+    stopWorkflow: () => {
+        const es = get()._eventSource
+        if (es) {
+            es.close()
+            const time = () => new Date().toLocaleTimeString('en-US', { hour12: false })
+            get().appendLog({ time: time(), tag: 'SYS', message: 'Execution stopped by user' })
+        }
+        set({ running: false, _eventSource: null })
     },
 }))
 

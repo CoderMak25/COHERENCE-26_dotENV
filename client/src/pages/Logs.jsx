@@ -76,12 +76,12 @@ export default function Logs() {
                             className="w-[36px] h-[20px] border-2 shadow-[2px_2px_0] relative flex items-center p-[2px] cursor-pointer"
                             style={{
                                 backgroundColor: autoRefresh ? 'var(--accent)' : 'var(--bg-raised)',
-                                borderColor: '#0D0D0D',
-                                boxShadow: '2px 2px 0 #0D0D0D'
+                                borderColor: 'var(--border-bright)',
+                                boxShadow: '2px 2px 0 var(--shadow-color)'
                             }}
                         >
                             <div
-                                className="w-[12px] h-[12px] bg-[#0D0D0D] absolute transition-all duration-200"
+                                className="w-[12px] h-[12px] bg-[var(--text-inverted)] absolute transition-all duration-200"
                                 style={{ right: autoRefresh ? '2px' : 'auto', left: autoRefresh ? 'auto' : '2px' }}
                             ></div>
                         </div>

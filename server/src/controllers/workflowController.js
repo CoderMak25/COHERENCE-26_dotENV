@@ -1,5 +1,34 @@
 import Workflow from '../models/Workflow.js'
 import { outreachQueue } from '../queues/outreachQueue.js'
+import { runOutreachWorkflowSSE } from '../services/executionEngine.js'
+
+// GET /api/workflows/run — SSE streaming endpoint for real-time execution
+export const runWorkflow = async (req, res, next) => {
+    // Set up SSE headers
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+    })
+
+    const send = (event, data) => {
+        res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+    }
+
+    // Handle client disconnect (STOP button)
+    let aborted = false
+    req.on('close', () => { aborted = true })
+
+    try {
+        await runOutreachWorkflowSSE(send, () => aborted)
+        send('done', { message: 'Workflow complete' })
+    } catch (err) {
+        send('error', { message: err.message })
+    }
+
+    res.end()
+}
 
 // GET /api/workflows
 export const getWorkflows = async (req, res, next) => {

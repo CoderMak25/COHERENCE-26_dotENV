@@ -1,4 +1,5 @@
 import Lead from '../models/Lead.js'
+import Log from '../models/Log.js'
 import * as XLSX from 'xlsx'
 
 // GET /api/leads
@@ -104,6 +105,98 @@ export const bulkDeleteLeads = async (req, res, next) => {
         }
         const result = await Lead.deleteMany({ _id: { $in: ids } })
         res.json({ deleted: result.deletedCount })
+    } catch (err) {
+        next(err)
+    }
+}
+
+// GET /api/leads/:id/history — outreach history for a lead
+export const getLeadHistory = async (req, res, next) => {
+    try {
+        const logs = await Log.find({ leadId: req.params.id })
+            .sort({ createdAt: 1 })
+        res.json({
+            data: logs.map(l => ({
+                id: l._id,
+                action: l.action,
+                step: l.step,
+                channel: l.channel,
+                direction: l.direction,
+                subject: l.subject,
+                body: l.body,
+                status: l.status,
+                error: l.errorMsg,
+                detail: l.detail,
+                createdAt: l.createdAt,
+            }))
+        })
+    } catch (err) {
+        next(err)
+    }
+}
+
+// POST /api/leads/:id/takeover — human takes over automation
+export const takeOverLead = async (req, res, next) => {
+    try {
+        const lead = await Lead.findById(req.params.id)
+        if (!lead) return res.status(404).json({ error: 'Lead not found' })
+        lead.humanTakeover = true
+        lead.status = 'manual_conversation'
+        lead.takenOverAt = new Date()
+        await lead.save()
+        res.json({ status: 'taken_over', message: `Automation stopped for ${lead.name}.` })
+    } catch (err) {
+        next(err)
+    }
+}
+
+// POST /api/leads/:id/pause -- pause lead automation
+export const pauseLead = async (req, res, next) => {
+    try {
+        const lead = await Lead.findById(req.params.id)
+        if (!lead) return res.status(404).json({ error: 'Lead not found' })
+        lead.status = 'paused'
+        await lead.save()
+        res.json({ status: 'paused' })
+    } catch (err) {
+        next(err)
+    }
+}
+
+// POST /api/leads/:id/resume -- resume lead automation
+export const resumeLead = async (req, res, next) => {
+    try {
+        const lead = await Lead.findById(req.params.id)
+        if (!lead) return res.status(404).json({ error: 'Lead not found' })
+        lead.status = 'contacted'
+        lead.humanTakeover = false
+        await lead.save()
+        res.json({ status: 'resumed' })
+    } catch (err) {
+        next(err)
+    }
+}
+
+// GET /api/leads/dashboard/stats
+export const getDashboardStats = async (req, res, next) => {
+    try {
+        const allLeads = await Lead.find()
+        const statuses = {}
+        for (const l of allLeads) {
+            statuses[l.status] = (statuses[l.status] || 0) + 1
+        }
+
+        const totalSent = await Log.countDocuments({ direction: 'sent', status: 'SENT' })
+        const totalReplied = await Log.countDocuments({ direction: 'received' })
+
+        res.json({
+            total_leads: allLeads.length,
+            by_status: statuses,
+            total_sent: totalSent,
+            total_replied: totalReplied,
+            reply_rate: totalSent > 0 ? Math.round(totalReplied / totalSent * 1000) / 10 : 0,
+            needs_attention: statuses.needs_human || 0,
+        })
     } catch (err) {
         next(err)
     }
