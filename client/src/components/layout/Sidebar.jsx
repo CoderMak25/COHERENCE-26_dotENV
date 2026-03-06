@@ -5,7 +5,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 const mainNavItems = [
     { path: '/', label: 'DASHBOARD', icon: 'solar:widget-5-linear' },
     { path: '/leads', label: 'LEADS', icon: 'solar:users-group-two-rounded-linear' },
-    { path: '/campaigns', label: 'WORKFLOWS', icon: 'solar:branching-paths-down-linear' },
+    { path: '/workflows', label: 'WORKFLOWS', icon: 'solar:branching-paths-down-linear' },
 ]
 
 const systemNavItems = [
