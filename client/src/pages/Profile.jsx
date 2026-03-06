@@ -1,21 +1,82 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Icon } from '@iconify/react'
+import { useAuth } from '../context/AuthContext'
+import { usersAPI } from '../services/api'
 
 export default function Profile() {
+    const { user } = useAuth()
     const [isEditing, setIsEditing] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [saved, setSaved] = useState(false)
     const [profile, setProfile] = useState({
-        name: 'OPERATOR X',
-        role: 'OUTREACH COMMANDER',
-        bio: 'Full-stack growth operator running multi-channel outreach campaigns. Specialized in B2B lead generation and automated email sequences.',
-        email: 'operator@outreachx.io',
-        phone: '+91 98765 43210',
-        location: 'MUMBAI, INDIA',
+        name: '',
+        role: 'OUTREACH OPERATOR',
+        bio: '',
+        email: '',
+        phone: '',
+        location: '',
     })
     const [editForm, setEditForm] = useState({ ...profile })
 
-    const handleSave = () => {
-        setProfile({ ...editForm })
-        setIsEditing(false)
+    // Load profile from Firebase + DB
+    useEffect(() => {
+        if (!user) return
+
+        // Pre-fill from Firebase auth
+        const firebaseProfile = {
+            name: user.displayName || user.email?.split('@')[0]?.toUpperCase() || 'USER',
+            email: user.email || '',
+            bio: '',
+            phone: '',
+            location: '',
+            role: 'OUTREACH OPERATOR',
+        }
+        setProfile(firebaseProfile)
+        setEditForm(firebaseProfile)
+
+        // Enhance with DB data
+        const loadProfile = async () => {
+            try {
+                const data = await usersAPI.getProfile({
+                    firebaseUid: user.uid,
+                    name: user.displayName || '',
+                    email: user.email || '',
+                    photoUrl: user.photoURL || '',
+                })
+                const dbProfile = {
+                    name: data.name || firebaseProfile.name,
+                    role: data.role || 'OUTREACH OPERATOR',
+                    bio: data.bio || '',
+                    email: data.email || firebaseProfile.email,
+                    phone: data.phone || '',
+                    location: data.location || '',
+                }
+                setProfile(dbProfile)
+                setEditForm(dbProfile)
+            } catch {
+                // Use Firebase defaults
+            }
+        }
+        loadProfile()
+    }, [user])
+
+    const handleSave = async () => {
+        if (!user) return
+        setSaving(true)
+        try {
+            await usersAPI.updateProfile({
+                firebaseUid: user.uid,
+                ...editForm,
+            })
+            setProfile({ ...editForm })
+            setIsEditing(false)
+            setSaved(true)
+            setTimeout(() => setSaved(false), 2000)
+        } catch (err) {
+            console.error('Save failed:', err)
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleCancel = () => {
@@ -27,6 +88,8 @@ export default function Profile() {
         setEditForm(prev => ({ ...prev, [field]: value }))
     }
 
+    const initials = profile.name ? profile.name.slice(0, 2).toUpperCase() : 'OP'
+
     const stats = [
         { label: 'EMAILS SENT', value: '12,847', icon: 'solar:letter-linear', change: '+234 THIS WEEK' },
         { label: 'LEADS CONTACTED', value: '3,412', icon: 'solar:users-group-two-rounded-linear', change: '+89 THIS WEEK' },
@@ -35,10 +98,10 @@ export default function Profile() {
     ]
 
     const connectedAccounts = [
-        { name: 'GOOGLE WORKSPACE', icon: 'solar:inbox-linear', status: 'connected', detail: 'operator@outreachx.io' },
-        { name: 'LINKEDIN', icon: 'solar:link-minimalistic-2-linear', status: 'connected', detail: '@operatorx' },
+        { name: 'GOOGLE WORKSPACE', icon: 'solar:inbox-linear', status: user?.providerData?.[0]?.providerId === 'google.com' ? 'connected' : 'disconnected', detail: user?.email || 'NOT CONNECTED' },
+        { name: 'LINKEDIN', icon: 'solar:link-minimalistic-2-linear', status: 'disconnected', detail: 'NOT CONNECTED' },
         { name: 'SLACK', icon: 'solar:chat-round-dots-linear', status: 'disconnected', detail: 'NOT CONNECTED' },
-        { name: 'HUBSPOT CRM', icon: 'solar:database-linear', status: 'connected', detail: 'SYNCED — 1,248 CONTACTS' },
+        { name: 'HUBSPOT CRM', icon: 'solar:database-linear', status: 'disconnected', detail: 'NOT CONNECTED' },
     ]
 
     const SectionHeader = ({ icon, title, action }) => (
@@ -64,7 +127,7 @@ export default function Profile() {
                     className="flex-1 h-[32px] px-3 text-[11px] font-bold text-[var(--text-primary)] bg-[var(--bg-surface)] animate-slide-down"
                 />
             ) : (
-                <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-widest">{value}</span>
+                <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-widest">{value || '—'}</span>
             )}
         </div>
     )
@@ -80,13 +143,13 @@ export default function Profile() {
                             <button onClick={handleCancel} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
                                 CANCEL
                             </button>
-                            <button onClick={handleSave} className="btn-base btn-accent">
-                                SAVE PROFILE
+                            <button onClick={handleSave} disabled={saving} className="btn-base btn-accent">
+                                {saving ? 'SAVING...' : 'SAVE PROFILE'}
                             </button>
                         </>
                     ) : (
                         <button onClick={() => setIsEditing(true)} className="btn-base btn-accent">
-                            EDIT PROFILE
+                            {saved ? '✓ SAVED' : 'EDIT PROFILE'}
                         </button>
                     )}
                 </div>
@@ -98,8 +161,12 @@ export default function Profile() {
             <div className="brutalist-card p-6 mb-5 flex items-start gap-6">
                 {/* Avatar */}
                 <div className="flex flex-col items-center gap-3 flex-shrink-0">
-                    <div className="w-[96px] h-[96px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[5px_5px_0_#0D0D0D] flex items-center justify-center">
-                        <span className="font-syne text-4xl font-bold text-[#0D0D0D]">OP</span>
+                    <div className="w-[96px] h-[96px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[5px_5px_0_#0D0D0D] flex items-center justify-center overflow-hidden">
+                        {user?.photoURL ? (
+                            <img src={user.photoURL} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="font-syne text-4xl font-bold text-[#0D0D0D]">{initials}</span>
+                        )}
                     </div>
                     {isEditing && (
                         <button className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] px-[10px] animate-slide-down">
@@ -130,21 +197,22 @@ export default function Profile() {
                             value={editForm.bio}
                             onChange={(e) => handleChange('bio', e.target.value)}
                             rows={2}
+                            placeholder="Tell us about yourself..."
                             className="w-full px-3 py-2 text-[11px] font-bold text-[var(--text-secondary)] bg-[var(--bg-surface)] animate-slide-down"
                         />
                     ) : (
-                        <p className="text-[11px] font-bold text-[var(--text-secondary)] leading-relaxed max-w-[600px]">{profile.bio}</p>
+                        <p className="text-[11px] font-bold text-[var(--text-secondary)] leading-relaxed max-w-[600px]">{profile.bio || 'No bio set — click Edit Profile to add one.'}</p>
                     )}
 
                     <div className="flex items-center gap-5 mt-4">
                         <div className="flex items-center gap-2">
                             <Icon icon="solar:letter-linear" className="text-[var(--text-muted)] text-sm" />
-                            <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">{profile.email}</span>
+                            <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">{profile.email || '—'}</span>
                         </div>
                         <span className="text-[var(--border-bright)]">|</span>
                         <div className="flex items-center gap-2">
                             <Icon icon="solar:map-point-linear" className="text-[var(--text-muted)] text-sm" />
-                            <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">{profile.location}</span>
+                            <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-widest">{profile.location || '—'}</span>
                         </div>
                     </div>
                 </div>
@@ -195,17 +263,24 @@ export default function Profile() {
                     </div>
                     <div className="flex items-center justify-between py-3 border-b border-[var(--border)] px-1">
                         <span className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold w-[140px]">MEMBER SINCE</span>
-                        <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-widest">JAN 15, 2024</span>
+                        <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-widest">
+                            {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() : '—'}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between py-3 border-b border-[var(--border)] px-1">
-                        <span className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold w-[140px]">TEAM</span>
-                        <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-widest">GROWTH OPS — 4 MEMBERS</span>
+                        <span className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold w-[140px]">AUTH PROVIDER</span>
+                        <span className="text-[11px] font-bold text-[var(--text-primary)] tracking-widest">
+                            {user?.providerData?.[0]?.providerId === 'google.com' ? 'GOOGLE' : user?.isAnonymous ? 'ANONYMOUS' : 'EMAIL'}
+                        </span>
                     </div>
                     <div className="flex items-center justify-between py-3 px-1">
-                        <span className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold w-[140px]">API KEY</span>
+                        <span className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold w-[140px]">USER ID</span>
                         <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-[var(--text-muted)] tracking-widest">OX-****-****-7F3A</span>
-                            <button className="w-[28px] h-[28px] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] transition-transform">
+                            <span className="text-[11px] font-bold text-[var(--text-muted)] tracking-widest">{user?.uid?.slice(0, 12)}...</span>
+                            <button
+                                onClick={() => navigator.clipboard.writeText(user?.uid || '')}
+                                className="w-[28px] h-[28px] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] transition-transform"
+                            >
                                 <Icon icon="solar:copy-linear" className="text-sm" />
                             </button>
                         </div>
@@ -252,7 +327,7 @@ export default function Profile() {
                     <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">ACCOUNT HEALTHY</span>
                 </div>
                 <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
-                    LAST LOGIN: TODAY 09:42 IST
+                    LAST LOGIN: {user?.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).toUpperCase() : '—'}
                 </div>
             </div>
         </div>

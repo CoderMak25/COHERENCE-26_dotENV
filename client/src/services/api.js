@@ -58,4 +58,11 @@ export const logsAPI = {
     getAll: (params) => api.get('/logs', { params })
 }
 
+// Users
+export const usersAPI = {
+    getProfile: (params) => api.get('/users/profile', { params }),
+    updateProfile: (data) => api.put('/users/profile', data),
+    updateSettings: (data) => api.put('/users/settings', data),
+}
+
 export default api

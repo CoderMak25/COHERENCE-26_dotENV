@@ -1,13 +1,78 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Icon } from '@iconify/react'
 import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../context/AuthContext'
+import { usersAPI } from '../services/api'
 
 export default function Settings() {
     const { theme, toggleTheme } = useTheme()
+    const { user } = useAuth()
+    const [saving, setSaving] = useState(false)
+    const [saved, setSaved] = useState(false)
+    const [showPasswordFields, setShowPasswordFields] = useState(false)
+
+    // Form state — populated from Firebase user + DB
+    const [displayName, setDisplayName] = useState('')
+    const [email, setEmail] = useState('')
     const [notifications, setNotifications] = useState(true)
     const [twoFactor, setTwoFactor] = useState(false)
     const [language, setLanguage] = useState('EN')
-    const [showPasswordFields, setShowPasswordFields] = useState(false)
+
+    // Load data from Firebase user + DB on mount
+    useEffect(() => {
+        if (!user) return
+        // Pre-fill from Firebase auth
+        setDisplayName(user.displayName || user.email?.split('@')[0] || 'USER')
+        setEmail(user.email || '')
+
+        // Load from DB
+        const loadSettings = async () => {
+            try {
+                const data = await usersAPI.getProfile({
+                    firebaseUid: user.uid,
+                    name: user.displayName || '',
+                    email: user.email || '',
+                    photoUrl: user.photoURL || '',
+                })
+                if (data.name) setDisplayName(data.name)
+                if (data.email) setEmail(data.email)
+                if (data.preferences) {
+                    setNotifications(data.preferences.notifications ?? true)
+                    setTwoFactor(data.preferences.twoFactor ?? false)
+                    setLanguage(data.preferences.language || 'EN')
+                }
+            } catch {
+                // silently fail — use Firebase defaults
+            }
+        }
+        loadSettings()
+    }, [user])
+
+    const handleSave = async () => {
+        if (!user) return
+        setSaving(true)
+        try {
+            // Save profile data
+            await usersAPI.updateProfile({
+                firebaseUid: user.uid,
+                name: displayName,
+                email,
+            })
+            // Save preferences
+            await usersAPI.updateSettings({
+                firebaseUid: user.uid,
+                preferences: { theme, language, notifications, twoFactor },
+            })
+            setSaved(true)
+            setTimeout(() => setSaved(false), 2000)
+        } catch (err) {
+            console.error('Save failed:', err)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const initials = displayName ? displayName.slice(0, 2).toUpperCase() : 'OP'
 
     const ToggleSwitch = ({ enabled, onToggle, label }) => (
         <div className="flex items-center justify-between">
@@ -43,7 +108,7 @@ export default function Settings() {
     )
 
     const sessions = [
-        { device: 'CHROME — WINDOWS 11', location: 'MUMBAI, IN', time: 'ACTIVE NOW', active: true },
+        { device: 'CHROME — WINDOWS 11', location: 'CURRENT SESSION', time: 'ACTIVE NOW', active: true },
         { device: 'FIREFOX — MACOS', location: 'BANGALORE, IN', time: '2 HOURS AGO', active: false },
         { device: 'SAFARI — IPHONE 15', location: 'DELHI, IN', time: '1 DAY AGO', active: false },
     ]
@@ -53,8 +118,12 @@ export default function Settings() {
             {/* PAGE HEADER */}
             <div className="flex items-center justify-between mb-6">
                 <h2 className="font-syne text-2xl font-bold uppercase tracking-tight text-[var(--text-primary)]">SETTINGS</h2>
-                <button className="btn-base btn-accent">
-                    SAVE CHANGES
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="btn-base btn-accent"
+                >
+                    {saving ? 'SAVING...' : saved ? '✓ SAVED' : 'SAVE CHANGES'}
                 </button>
             </div>
 
@@ -68,8 +137,12 @@ export default function Settings() {
 
                     {/* Profile Photo */}
                     <div className="flex items-center gap-5 mb-6">
-                        <div className="w-[72px] h-[72px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[4px_4px_0_#0D0D0D] flex items-center justify-center flex-shrink-0">
-                            <span className="font-syne text-2xl font-bold text-[#0D0D0D]">OP</span>
+                        <div className="w-[72px] h-[72px] bg-[var(--accent)] border-2 border-[#0D0D0D] shadow-[4px_4px_0_#0D0D0D] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {user?.photoURL ? (
+                                <img src={user.photoURL} alt="avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="font-syne text-2xl font-bold text-[#0D0D0D]">{initials}</span>
+                            )}
                         </div>
                         <div className="flex flex-col gap-2">
                             <button className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[10px] py-[6px] px-[12px]">
@@ -84,7 +157,8 @@ export default function Settings() {
                         <label className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold block mb-2">DISPLAY NAME</label>
                         <input
                             type="text"
-                            defaultValue="OPERATOR X"
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
                             className="w-full h-[40px] px-3.5 text-[11px] font-bold text-[var(--text-primary)] bg-[var(--bg-surface)]"
                         />
                     </div>
@@ -94,13 +168,22 @@ export default function Settings() {
                         <label className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold block mb-2">EMAIL ADDRESS</label>
                         <input
                             type="text"
-                            defaultValue="operator@outreachx.io"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="w-full h-[40px] px-3.5 text-[11px] font-bold text-[var(--text-primary)] bg-[var(--bg-surface)]"
                         />
                     </div>
 
+                    {/* Firebase Auth Info */}
+                    {user && (
+                        <div className="mt-2 p-3 bg-[var(--bg-surface)] border border-[var(--border)]">
+                            <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-widest font-bold block mb-1">SIGNED IN AS</span>
+                            <span className="text-[10px] font-bold text-[var(--text-primary)] tracking-widest">{user.email || (user.isAnonymous ? 'ANONYMOUS / DEMO USER' : user.uid)}</span>
+                        </div>
+                    )}
+
                     {/* Change Password */}
-                    <div>
+                    <div className="mt-4">
                         <label className="text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold block mb-2">PASSWORD</label>
                         {!showPasswordFields ? (
                             <button
@@ -112,12 +195,12 @@ export default function Settings() {
                         ) : (
                             <div className="flex flex-col gap-3 animate-slide-down">
                                 <input
-                                    type="text"
+                                    type="password"
                                     placeholder="CURRENT PASSWORD"
                                     className="w-full h-[40px] px-3.5 text-[11px] font-bold text-[var(--text-primary)] placeholder-[var(--text-muted)] bg-[var(--bg-surface)]"
                                 />
                                 <input
-                                    type="text"
+                                    type="password"
                                     placeholder="NEW PASSWORD"
                                     className="w-full h-[40px] px-3.5 text-[11px] font-bold text-[var(--text-primary)] placeholder-[var(--text-muted)] bg-[var(--bg-surface)]"
                                 />
