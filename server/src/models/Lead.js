@@ -16,8 +16,6 @@ const leadSchema = new mongoose.Schema({
     lastContact: { type: Date },
     metadata: { type: Map, of: String },
 }, { timestamps: true })
-
-leadSchema.index({ email: 1 })
 leadSchema.index({ status: 1 })
 leadSchema.index({ company: 1 })
 

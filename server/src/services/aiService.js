@@ -1,6 +1,12 @@
-import OpenAI from 'openai'
+import { GoogleGenAI } from '@google/genai'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+let ai = null
+const getClient = () => {
+    if (!ai) {
+        ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    }
+    return ai
+}
 
 export const generateMessage = async (lead, nodeType = 'email') => {
     const prompt = `
@@ -19,15 +25,15 @@ Rules:
 - End with ONE low-friction CTA question
 - No generic phrases like "I hope this finds you well"
 
-Respond ONLY with valid JSON, no markdown:
+Respond ONLY with valid JSON, no markdown, no code fences:
 {"subject": "...", "body": "...", "personalizationScore": 0-100}
 `
-    const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7
+
+    const response = await getClient().models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: prompt
     })
 
-    return JSON.parse(response.choices[0].message.content)
+    const text = response.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    return JSON.parse(text)
 }
