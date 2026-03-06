@@ -6,13 +6,17 @@ let outreachQueue = null
 
 if (redisUrl) {
     try {
+        const isTls = redisUrl.startsWith('rediss://')
         const bullOptions = {
             redis: {
-                url: redisUrl,
-                maxRetriesPerRequest: null
+                maxRetriesPerRequest: null,
+                retryStrategy: () => null,
+                enableReadyCheck: false,
+                ...(isTls ? { tls: { rejectUnauthorized: false } } : {})
             }
         }
-        outreachQueue = new Bull('outreach', bullOptions)
+
+        outreachQueue = new Bull('outreach', redisUrl, bullOptions)
 
         outreachQueue.on('completed', (job) => {
             console.log(`Job ${job.id} completed`)

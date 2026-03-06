@@ -18,6 +18,8 @@ export const leadsAPI = {
     update: (id, data) => api.put(`/leads/${id}`, data),
     remove: (id) => api.delete(`/leads/${id}`),
     bulkDelete: (ids) => api.delete('/leads/bulk', { data: { ids } }),
+    recordEngagement: (id, eventType) => api.post(`/leads/${id}/engagement`, { eventType }),
+    rescoreAll: () => api.post('/leads/rescore-all'),
     import: (file) => {
         const form = new FormData()
         form.append('file', file)
@@ -26,6 +28,7 @@ export const leadsAPI = {
         })
     }
 }
+
 
 // Campaigns
 export const campaignsAPI = {

@@ -75,6 +75,13 @@ export default function Dashboard() {
     const maxChart = Math.max(...chartData.map(d => d.value), 1)
     const topLeads = stats?.topLeads || []
     const workflowCounts = stats?.workflowCounts || []
+    const scoring = stats?.scoring || { hot: 0, warm: 0, cold: 0, avgScore: 0 }
+
+    const getScoreColor = (score) => {
+        if (score >= 80) return 'var(--danger)'
+        if (score >= 50) return 'var(--warning, #d4a72c)'
+        return 'var(--text-muted)'
+    }
 
     const statCards = [
         { label: 'TOTAL LEADS', value: totalLeads.toLocaleString(), icon: 'solar:users-group-two-rounded-linear', trend: `${p.new || 0} NEW`, trendUp: true, bottom: `${p.contacted || 0} CONTACTED`, link: '/app/leads' },
@@ -162,6 +169,20 @@ export default function Dashboard() {
                             {i < pipeline.length - 1 && <span className="pipeline-arrow">──▶</span>}
                         </div>
                     ))}
+                </div>
+            </div>
+
+            {/* LEAD SCORING STRIP */}
+            <div className="flex gap-4 mb-6">
+                <div className="brutalist-card p-4 flex-1 flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">SCORING</span>
+                    <span className="text-[var(--border-bright)]">|</span>
+                    <span className="text-[11px] font-bold" style={{ color: 'var(--danger)' }}>● HOT {scoring.hot}</span>
+                    <span className="text-[11px] font-bold" style={{ color: 'var(--warning, #d4a72c)' }}>● WARM {scoring.warm}</span>
+                    <span className="text-[11px] font-bold text-[var(--text-muted)]">● COLD {scoring.cold}</span>
+                    <span className="text-[var(--border-bright)] ml-auto">|</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">AVG SCORE</span>
+                    <span className="font-syne text-lg font-bold text-[var(--text-primary)] leading-none">{scoring.avgScore}</span>
                 </div>
             </div>
 
@@ -289,6 +310,7 @@ export default function Dashboard() {
                     <thead className="bg-[var(--bg-raised)]">
                         <tr>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">LEAD</th>
+                            <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">SCORE</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">STATUS</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">WORKFLOW</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">LAST ACTION</th>
@@ -301,6 +323,10 @@ export default function Dashboard() {
                                 <td className="p-[12px_16px]">
                                     <span className="text-[var(--text-primary)]">{lead.name}</span>
                                     <span className="text-[var(--text-muted)] ml-2">@ {lead.company || '—'}</span>
+                                </td>
+                                <td className="p-[12px_16px]">
+                                    <span className="text-[11px] font-bold" style={{ color: getScoreColor(lead.score || 0) }}>{lead.score || 0}</span>
+                                    <span className="text-[9px] font-bold ml-1" style={{ color: getScoreColor(lead.score || 0) }}>{lead.scoreLabel || 'COLD'}</span>
                                 </td>
                                 <td className="p-[12px_16px]"><span className={`badge ${getStatusBadge(lead.status)}`}>{(lead.status || 'NEW').toUpperCase()}</span></td>
                                 <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.workflow || '—'}</td>

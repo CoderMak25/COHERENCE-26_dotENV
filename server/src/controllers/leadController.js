@@ -1,6 +1,7 @@
 import Lead from '../models/Lead.js'
 import Log from '../models/Log.js'
 import * as XLSX from 'xlsx'
+import { calculateLeadScore, getScoreLabel, processEngagementEvent } from '../services/leadScoringService.js'
 
 // GET /api/leads
 export const getLeads = async (req, res, next) => {
@@ -28,7 +29,7 @@ export const getLeads = async (req, res, next) => {
 
         const total = await Lead.countDocuments(filter)
         const leads = await Lead.find(filter)
-            .sort({ createdAt: -1 })
+            .sort({ score: -1, createdAt: -1 })
             .skip((Number(page) - 1) * Number(limit))
             .limit(Number(limit))
 
@@ -64,7 +65,10 @@ export const createLead = async (req, res, next) => {
         if (!name || !email) {
             return res.status(400).json({ error: 'Name and email are required' })
         }
-        const lead = await Lead.create(req.body)
+        // Calculate lead score before saving
+        const score = calculateLeadScore(req.body)
+        const scoreLabel = getScoreLabel(score)
+        const lead = await Lead.create({ ...req.body, score, scoreLabel })
         res.status(201).json(lead)
     } catch (err) {
         if (err.code === 11000) {
@@ -234,9 +238,12 @@ export const importLeads = async (req, res, next) => {
                     continue
                 }
 
+                // Calculate lead score for imported lead
+                const score = calculateLeadScore(leadData)
+                const scoreLabel = getScoreLabel(score)
                 await Lead.findOneAndUpdate(
                     { email: leadData.email },
-                    { $setOnInsert: leadData },
+                    { $set: { ...leadData, score, scoreLabel } },
                     { upsert: true, new: true }
                 )
                 imported++
@@ -250,6 +257,54 @@ export const importLeads = async (req, res, next) => {
         }
 
         res.json({ imported, skipped, errors })
+    } catch (err) {
+        next(err)
+    }
+}
+
+// POST /api/leads/:id/engagement — record engagement event and recalculate score
+export const recordEngagement = async (req, res, next) => {
+    try {
+        const { eventType } = req.body
+        if (!eventType) {
+            return res.status(400).json({ error: 'eventType is required' })
+        }
+
+        const lead = await Lead.findById(req.params.id)
+        if (!lead) return res.status(404).json({ error: 'Lead not found' })
+
+        const updates = processEngagementEvent(lead.toObject(), eventType)
+        lead.engagementHistory = updates.engagementHistory
+        lead.score = updates.score
+        lead.scoreLabel = updates.scoreLabel
+        await lead.save()
+
+        res.json({
+            score: lead.score,
+            scoreLabel: lead.scoreLabel,
+            engagementHistory: lead.engagementHistory
+        })
+    } catch (err) {
+        next(err)
+    }
+}
+
+// POST /api/leads/rescore-all — bulk recalculate all lead scores
+export const rescoreAll = async (req, res, next) => {
+    try {
+        const leads = await Lead.find({})
+        let updated = 0
+        for (const lead of leads) {
+            const score = calculateLeadScore(lead.toObject())
+            const scoreLabel = getScoreLabel(score)
+            if (lead.score !== score || lead.scoreLabel !== scoreLabel) {
+                lead.score = score
+                lead.scoreLabel = scoreLabel
+                await lead.save()
+                updated++
+            }
+        }
+        res.json({ total: leads.length, updated })
     } catch (err) {
         next(err)
     }

@@ -106,6 +106,12 @@ export default function Leads() {
         setSelectAll(!selectAll)
     }
 
+    const getScoreColor = (score) => {
+        if (score >= 80) return 'var(--danger)'
+        if (score >= 50) return 'var(--warning, #d4a72c)'
+        return 'var(--text-muted)'
+    }
+
     return (
         <div className="absolute inset-0 overflow-y-auto p-[28px] bg-[var(--bg-base)] flex flex-col animate-stagger">
             <div className="flex justify-between items-center flex-shrink-0">
@@ -205,6 +211,7 @@ export default function Leads() {
                             <th className="p-[12px_16px] w-[140px] text-[10px] uppercase text-[var(--text-muted)] font-bold tracking-widest">ROLE</th>
                             <th className="p-[12px_16px] w-[220px] text-[10px] uppercase text-[var(--text-muted)] font-bold tracking-widest">EMAIL</th>
                             <th className="p-[12px_16px] w-[110px] text-[10px] uppercase text-[var(--text-muted)] font-bold tracking-widest">STATUS</th>
+                            <th className="p-[12px_16px] w-[90px] text-[10px] uppercase text-[var(--text-muted)] font-bold tracking-widest">SCORE</th>
                             <th className="p-[12px_16px] w-[160px] text-[10px] uppercase text-[var(--text-muted)] font-bold tracking-widest">WORKFLOW</th>
                             <th className="p-[12px_16px] w-[160px] text-[10px] uppercase text-[var(--text-muted)] font-bold tracking-widest">LAST ACTION</th>
                             <th className="p-[12px_16px] w-[90px] text-[10px] uppercase text-[var(--text-muted)] font-bold tracking-widest text-center">⋯</th>
@@ -213,12 +220,12 @@ export default function Leads() {
                     <tbody className="text-[11px] font-bold">
                         {loading && (
                             <tr>
-                                <td colSpan="10" className="p-[20px] text-center text-[var(--text-muted)]">Loading leads from database...</td>
+                                <td colSpan="11" className="p-[20px] text-center text-[var(--text-muted)]">Loading leads from database...</td>
                             </tr>
                         )}
                         {!loading && leads.length === 0 && (
                             <tr>
-                                <td colSpan="10" className="p-[20px] text-center text-[var(--text-muted)]">No leads found. Click CREATE to add one.</td>
+                                <td colSpan="11" className="p-[20px] text-center text-[var(--text-muted)]">No leads found. Click CREATE to add one.</td>
                             </tr>
                         )}
                         {!loading && leads.map((lead, index) => {
@@ -239,6 +246,10 @@ export default function Leads() {
                                     <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.position}</td>
                                     <td className="p-[12px_16px] text-[var(--text-muted)]">{lead.email}</td>
                                     <td className="p-[12px_16px]"><span className={`badge ${badge.class}`}>{badge.label}</span></td>
+                                    <td className="p-[12px_16px]">
+                                        <span className="text-[11px] font-bold" style={{ color: getScoreColor(lead.score || 0) }}>{lead.score || 0}</span>
+                                        <span className="text-[9px] font-bold ml-1" style={{ color: getScoreColor(lead.score || 0) }}>{lead.scoreLabel || '—'}</span>
+                                    </td>
                                     <td className={`p-[12px_16px] ${lead.workflow ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>{lead.workflow || '—'}</td>
                                     <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.lastAction || 'No Actions Yet'}</td>
                                     <td className="p-[12px_16px] flex gap-2 justify-center">

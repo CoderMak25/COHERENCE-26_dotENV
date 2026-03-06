@@ -11,7 +11,6 @@ import 'reactflow/dist/style.css'
 
 import useWorkflowStore from './workflowStore'
 import { NODE_DEFS } from './nodeTypes'
-import { starterTemplate } from './starterTemplate'
 import WorkflowNodeComp from './WorkflowNode'
 import WorkflowEdgeComp from './WorkflowEdge'
 import NodePalette from './NodePalette'
@@ -19,8 +18,9 @@ import FloatingToolbar from './FloatingToolbar'
 import NodeSearchPicker from './NodeSearchPicker'
 import ConfigPanel from './ConfigPanel'
 import ExecutionLog from './ExecutionLog'
-import LeadSelector from './LeadSelector'
 import StatusBar from './StatusBar'
+import WorkflowListBar from './WorkflowListBar'
+import LeadPickerModal from './LeadPickerModal'
 
 const nodeTypes = { workflowNode: WorkflowNodeComp }
 const edgeTypes = { workflowEdge: WorkflowEdgeComp }
@@ -34,14 +34,21 @@ function WorkflowCanvas() {
         setSelectedNode, setSelectedEdge, clearSelection,
         openConfigPanel, openPicker, closePicker,
         selectedNodeId, selectedEdgeId,
-        undo, saveWorkflow, duplicateNode,
+        undo, saveWorkflowToDB, saveWorkflowJSON, duplicateNode,
         showLog, running,
-        loadWorkflow,
+        loadSavedWorkflows, savedWorkflows, loadWorkflowFromDB,
     } = useWorkflowStore()
 
-    // Load starter template on mount
+    // Load saved workflows list on mount, load first if available
     useEffect(() => {
-        loadWorkflow(starterTemplate)
+        const init = async () => {
+            await loadSavedWorkflows()
+            const wfs = useWorkflowStore.getState().savedWorkflows
+            if (wfs.length > 0) {
+                await loadWorkflowFromDB(wfs[0]._id)
+            }
+        }
+        init()
     }, [])
 
     const onNodesChange = useCallback((changes) => {
@@ -115,7 +122,6 @@ function WorkflowCanvas() {
     }, [clearSelection, closePicker])
 
     const onPaneDoubleClick = useCallback((e) => {
-        // Picker will open at viewport position
         if (reactFlowInstance) {
             const bounds = reactFlowWrapper.current?.getBoundingClientRect()
             if (bounds) {
@@ -150,33 +156,27 @@ function WorkflowCanvas() {
     // Keyboard shortcuts
     useEffect(() => {
         const handler = (e) => {
-            // SPACE — open picker
             if (e.code === 'Space' && e.target === document.body) {
                 e.preventDefault()
                 openPicker({ x: 400, y: 300 })
             }
-            // DELETE
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 if (e.target !== document.body) return
                 if (selectedNodeId) deleteNode(selectedNodeId)
                 if (selectedEdgeId) deleteEdge(selectedEdgeId)
             }
-            // CTRL+Z
             if (e.ctrlKey && e.key === 'z') {
                 e.preventDefault()
                 undo()
             }
-            // CTRL+S
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault()
-                saveWorkflow()
+                saveWorkflowToDB()
             }
-            // CTRL+D
             if (e.ctrlKey && e.key === 'd') {
                 e.preventDefault()
                 if (selectedNodeId) duplicateNode(selectedNodeId)
             }
-            // ESC
             if (e.key === 'Escape') {
                 useWorkflowStore.getState().closeConfigPanel()
                 closePicker()
@@ -184,9 +184,8 @@ function WorkflowCanvas() {
         }
         window.addEventListener('keydown', handler)
         return () => window.removeEventListener('keydown', handler)
-    }, [selectedNodeId, selectedEdgeId, deleteNode, deleteEdge, undo, saveWorkflow, duplicateNode, openPicker, closePicker])
+    }, [selectedNodeId, selectedEdgeId, deleteNode, deleteEdge, undo, saveWorkflowToDB, duplicateNode, openPicker, closePicker])
 
-    // Edge styles with proper colors
     const styledEdges = useMemo(() =>
         edges.map((e) => ({
             ...e,
@@ -197,6 +196,8 @@ function WorkflowCanvas() {
 
     return (
         <div className="wf-canvas-wrap" ref={reactFlowWrapper}>
+            <WorkflowListBar />
+
             <ReactFlow
                 nodes={nodes}
                 edges={styledEdges}
@@ -253,8 +254,8 @@ function WorkflowCanvas() {
 
             <StatusBar />
             <ExecutionLog />
-            <LeadSelector />
             <NodeSearchPicker />
+            <LeadPickerModal />
         </div>
     )
 }

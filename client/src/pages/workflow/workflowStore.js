@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { NODE_DEFS } from './nodeTypes'
+import { workflowsAPI, leadsAPI } from '../../services/api'
 
 let _idCounter = 100
 
@@ -66,11 +67,77 @@ const DEFAULT_EDGES = [
     { id: 'e_mmf10tkn', source: 'n_105_mmf1077r', target: 'n_106_mmf10i3m', type: 'smoothstep', animated: true },
 ]
 
+// ── Serialize nodes for API ──
+function serializeNodes(nodes) {
+    return nodes.map((n) => ({
+        id: n.id,
+        type: n.data.nodeType,
+        position: n.position,
+        config: n.data.config || {},
+        label: n.data.label,
+        enabled: n.data.enabled !== false,
+        note: n.data.note || '',
+    }))
+}
+
+function serializeEdges(edges) {
+    return edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle || 'out',
+        targetHandle: e.targetHandle || 'in',
+        label: e.label || e.data?.label || '',
+        data: e.data || {},
+    }))
+}
+
+function deserializeNodes(dbNodes) {
+    return (dbNodes || []).map((n) => ({
+        id: n.id,
+        type: 'workflowNode',
+        position: n.position || { x: 100, y: 100 },
+        data: {
+            nodeType: n.type,
+            label: n.label || NODE_DEFS[n.type]?.label || n.type,
+            config: n.config || {},
+            enabled: n.enabled !== false,
+            note: n.note || '',
+        },
+    }))
+}
+
+function deserializeEdges(dbEdges) {
+    return (dbEdges || []).map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle || 'out',
+        targetHandle: e.targetHandle || 'in',
+        label: e.label || '',
+        type: 'workflowEdge',
+        data: e.data || {},
+    }))
+}
+
+
 const useWorkflowStore = create((set, get) => ({
-    // ── Canvas state (pre-loaded with default workflow) ──
+    // ── Canvas state ──
     nodes: DEFAULT_NODES,
     edges: DEFAULT_EDGES,
     workflowName: 'Cold Outreach Sequence',
+
+    // ── DB state ──
+    workflowId: null,        // current workflow _id in MongoDB
+    savedWorkflows: [],      // list from DB
+    saving: false,
+    loadingList: false,
+    dirty: false,            // unsaved changes flag
+
+    // ── Lead assignment ──
+    assignedLeads: [],       // lead IDs assigned to this workflow
+    allLeads: [],            // all leads from DB
+    showLeadPicker: false,
 
     // ── UI state ──
     selectedNodeId: null,
@@ -95,12 +162,233 @@ const useWorkflowStore = create((set, get) => ({
     history: [],
     historyIndex: -1,
 
-    // ── Actions ──
+    // ══════════════════════════════════════
+    //  DB OPERATIONS
+    // ══════════════════════════════════════
+
+    loadSavedWorkflows: async () => {
+        set({ loadingList: true })
+        try {
+            const res = await workflowsAPI.getAll()
+            set({ savedWorkflows: res.data || res || [], loadingList: false })
+        } catch (err) {
+            console.error('Failed to load workflows:', err)
+            set({ loadingList: false })
+        }
+    },
+
+    loadWorkflowFromDB: async (id) => {
+        try {
+            const wf = await workflowsAPI.getOne(id)
+            const nodes = deserializeNodes(wf.nodes)
+            const edges = deserializeEdges(wf.edges)
+            set({
+                workflowId: wf._id,
+                workflowName: wf.name,
+                nodes,
+                edges,
+                assignedLeads: (wf.assignedLeads || []).map(l => typeof l === 'object' ? l._id : l),
+                history: [],
+                dirty: false,
+                configPanelOpen: false,
+                selectedNodeId: null,
+            })
+        } catch (err) {
+            console.error('Failed to load workflow:', err)
+        }
+    },
+
+    saveWorkflowToDB: async () => {
+        const { workflowId, nodes, edges, workflowName, assignedLeads } = get()
+        set({ saving: true })
+        try {
+            const payload = {
+                name: workflowName,
+                nodes: serializeNodes(nodes),
+                edges: serializeEdges(edges),
+                assignedLeads,
+            }
+            let saved
+            if (workflowId) {
+                saved = await workflowsAPI.update(workflowId, payload)
+            } else {
+                saved = await workflowsAPI.save(payload)
+            }
+            set({
+                workflowId: saved._id,
+                saving: false,
+                dirty: false,
+            })
+            // Refresh list
+            get().loadSavedWorkflows()
+            return saved
+        } catch (err) {
+            console.error('Failed to save workflow:', err)
+            set({ saving: false })
+            throw err
+        }
+    },
+
+    createNewWorkflow: async (name) => {
+        set({ saving: true })
+        try {
+            const payload = {
+                name: name || 'New Workflow',
+                nodes: [],
+                edges: [],
+                assignedLeads: [],
+            }
+            const saved = await workflowsAPI.save(payload)
+            set({
+                workflowId: saved._id,
+                workflowName: saved.name,
+                nodes: [],
+                edges: [],
+                assignedLeads: [],
+                history: [],
+                dirty: false,
+                saving: false,
+                configPanelOpen: false,
+                selectedNodeId: null,
+            })
+            get().loadSavedWorkflows()
+            return saved
+        } catch (err) {
+            console.error('Failed to create workflow:', err)
+            set({ saving: false })
+        }
+    },
+
+    deleteWorkflowFromDB: async (id) => {
+        try {
+            await workflowsAPI.remove(id)
+            const { workflowId } = get()
+            if (workflowId === id) {
+                // Reset canvas
+                set({
+                    workflowId: null,
+                    workflowName: 'Untitled Workflow',
+                    nodes: [],
+                    edges: [],
+                    assignedLeads: [],
+                    history: [],
+                    dirty: false,
+                })
+            }
+            get().loadSavedWorkflows()
+        } catch (err) {
+            console.error('Failed to delete workflow:', err)
+        }
+    },
+
+    // ══════════════════════════════════════
+    //  LEAD OPERATIONS
+    // ══════════════════════════════════════
+
+    fetchLeads: async () => {
+        try {
+            const res = await leadsAPI.getAll({ limit: 9999 })
+            set({ allLeads: res.data || res || [] })
+        } catch (err) {
+            console.error('Failed to fetch leads:', err)
+        }
+    },
+
+    toggleLeadAssignment: (leadId) => {
+        set((s) => {
+            const exists = s.assignedLeads.includes(leadId)
+            return {
+                assignedLeads: exists
+                    ? s.assignedLeads.filter((id) => id !== leadId)
+                    : [...s.assignedLeads, leadId],
+                dirty: true,
+            }
+        })
+    },
+
+    setAssignedLeads: (ids) => set({ assignedLeads: ids, dirty: true }),
+
+    toggleLeadPicker: () => set((s) => ({ showLeadPicker: !s.showLeadPicker })),
+    closeLeadPicker: () => set({ showLeadPicker: false }),
+
+    executeOnLeads: async () => {
+        const { workflowId, assignedLeads, allLeads, dirty } = get()
+        if (!workflowId) {
+            alert('Save the workflow first before executing.')
+            return
+        }
+        if (assignedLeads.length === 0) {
+            alert('Assign at least one lead to this workflow.')
+            return
+        }
+
+        const time = () => new Date().toLocaleTimeString('en-US', { hour12: false })
+        set({ running: true, logs: [], showLog: true, runCount: get().runCount + 1 })
+
+        // Auto-save if there are unsaved changes
+        if (dirty) {
+            get().appendLog({ time: time(), tag: 'SYS', message: 'Auto-saving workflow before execution...' })
+            try {
+                await get().saveWorkflowToDB()
+            } catch (err) {
+                get().appendLog({ time: time(), tag: 'ERR', message: `Auto-save failed: ${err.message || err}` })
+                set({ running: false })
+                return
+            }
+        }
+
+        get().appendLog({ time: time(), tag: 'SYS', message: `Executing workflow on ${assignedLeads.length} leads...` })
+
+        // Log each lead's details
+        for (const leadId of assignedLeads) {
+            const lead = allLeads.find(l => l._id === leadId)
+            if (lead) {
+                get().appendLog({
+                    time: time(),
+                    tag: 'USR',
+                    message: `→ ${lead.name} (${lead.email || 'no email'})${lead.company ? ` @ ${lead.company}` : ''}`
+                })
+            }
+        }
+
+        get().appendLog({ time: time(), tag: 'SYS', message: `Sending FROM: env configured email address` })
+
+        try {
+            const res = await workflowsAPI.execute(get().workflowId, assignedLeads)
+            get().appendLog({ time: time(), tag: 'SYS', message: `✓ Queued ${res.queued || assignedLeads.length} leads for execution` })
+
+            // Show individual lead confirmations from API
+            if (res.leads && Array.isArray(res.leads)) {
+                for (const lead of res.leads) {
+                    get().appendLog({
+                        time: time(),
+                        tag: 'OUT',
+                        message: `Queued: ${lead.name} → ${lead.email} (unique AI message will be generated)`
+                    })
+                }
+            }
+
+            get().appendLog({ time: time(), tag: 'SYS', message: `Workflow status: ACTIVE — each lead gets a unique personalized message` })
+            set({ running: false })
+            get().loadSavedWorkflows()
+        } catch (err) {
+            const msg = err?.error || err?.message || JSON.stringify(err)
+            get().appendLog({ time: time(), tag: 'ERR', message: `Execution failed: ${msg}` })
+            set({ running: false })
+        }
+    },
+
+    // ══════════════════════════════════════
+    //  CANVAS ACTIONS (unchanged)
+    // ══════════════════════════════════════
+
     setNodes: (nodesOrFn) => set((state) => ({
         nodes: typeof nodesOrFn === 'function' ? nodesOrFn(state.nodes) : nodesOrFn,
+        dirty: true,
     })),
     setEdges: (edgesOrFn) => set((state) => ({
         edges: typeof edgesOrFn === 'function' ? edgesOrFn(state.edges) : edgesOrFn,
+        dirty: true,
     })),
     setSelectedLeadIds: (idsOrFn) => set((state) => ({
         selectedLeadIds: typeof idsOrFn === 'function' ? idsOrFn(state.selectedLeadIds) : idsOrFn,
@@ -109,10 +397,10 @@ const useWorkflowStore = create((set, get) => ({
     onNodesChange: (changes) => {
         const { nodes } = get()
         const updated = applyNodeChanges(changes, nodes)
-        set({ nodes: updated })
+        set({ nodes: updated, dirty: true })
     },
 
-    setWorkflowName: (name) => set({ workflowName: name }),
+    setWorkflowName: (name) => set({ workflowName: name, dirty: true }),
 
     setSelectedNode: (id) => set({ selectedNodeId: id, selectedEdgeId: null }),
     setSelectedEdge: (id) => set({ selectedEdgeId: id, selectedNodeId: null }),
@@ -144,7 +432,7 @@ const useWorkflowStore = create((set, get) => ({
             },
         }
         get().pushHistory()
-        set((s) => ({ nodes: [...s.nodes, newNode] }))
+        set((s) => ({ nodes: [...s.nodes, newNode], dirty: true }))
         return id
     },
 
@@ -155,6 +443,7 @@ const useWorkflowStore = create((set, get) => ({
             edges: s.edges.filter((e) => e.source !== id && e.target !== id),
             selectedNodeId: s.selectedNodeId === id ? null : s.selectedNodeId,
             configPanelOpen: s.selectedNodeId === id ? false : s.configPanelOpen,
+            dirty: true,
         }))
     },
 
@@ -163,6 +452,7 @@ const useWorkflowStore = create((set, get) => ({
             nodes: s.nodes.map((n) =>
                 n.id === id ? { ...n, data: { ...n.data, config: { ...n.data.config, ...config } } } : n
             ),
+            dirty: true,
         }))
     },
 
@@ -171,6 +461,7 @@ const useWorkflowStore = create((set, get) => ({
             nodes: s.nodes.map((n) =>
                 n.id === id ? { ...n, data: { ...n.data, ...data } } : n
             ),
+            dirty: true,
         }))
     },
 
@@ -190,6 +481,7 @@ const useWorkflowStore = create((set, get) => ({
                     data: { ...node.data, config: { ...node.data.config } },
                 },
             ],
+            dirty: true,
         }))
     },
 
@@ -198,13 +490,14 @@ const useWorkflowStore = create((set, get) => ({
             nodes: s.nodes.map((n) =>
                 n.id === id ? { ...n, data: { ...n.data, enabled: !n.data.enabled } } : n
             ),
+            dirty: true,
         }))
     },
 
     // ── Edge CRUD ──
     addEdge: (edge) => {
         get().pushHistory()
-        set((s) => ({ edges: [...s.edges, edge] }))
+        set((s) => ({ edges: [...s.edges, edge], dirty: true }))
     },
 
     deleteEdge: (id) => {
@@ -212,6 +505,7 @@ const useWorkflowStore = create((set, get) => ({
         set((s) => ({
             edges: s.edges.filter((e) => e.id !== id),
             selectedEdgeId: s.selectedEdgeId === id ? null : s.selectedEdgeId,
+            dirty: true,
         }))
     },
 
@@ -231,6 +525,7 @@ const useWorkflowStore = create((set, get) => ({
             nodes: last.nodes,
             edges: last.edges,
             history: history.slice(0, -1),
+            dirty: true,
         })
     },
 
@@ -238,8 +533,8 @@ const useWorkflowStore = create((set, get) => ({
     appendLog: (entry) => set((s) => ({ logs: [...s.logs, entry] })),
     clearLogs: () => set({ logs: [] }),
 
-    // ── Save / Load ──
-    saveWorkflow: () => {
+    // ── Legacy saveWorkflow (JSON download) ──
+    saveWorkflowJSON: () => {
         const { nodes, edges, workflowName } = get()
         const wf = {
             id: `wf_${Date.now().toString(36)}`,
@@ -301,6 +596,7 @@ const useWorkflowStore = create((set, get) => ({
                 edges,
                 workflowName: wf.name || 'Imported Workflow',
                 history: [],
+                dirty: false,
             })
         } catch (err) {
             console.error('Failed to load workflow:', err)
@@ -314,13 +610,11 @@ const useWorkflowStore = create((set, get) => ({
 
         set({ running: true, logs: [], activeNodeId: null, showLog: true, runCount: get().runCount + 1 })
 
-        // Find starting node (trigger / no inputs)
         const triggerNode = nodes.find((n) => {
             const def = NODE_DEFS[n.data.nodeType]
             return def && def.inputs === 0
         }) || nodes[0]
 
-        // BFS traversal
         const visited = new Set()
         const queue = [triggerNode.id]
 
@@ -337,14 +631,12 @@ const useWorkflowStore = create((set, get) => ({
             const def = NODE_DEFS[node.data.nodeType]
             if (!def) continue
 
-            // Skip disabled nodes
             if (!node.data.enabled) {
                 get().appendLog({
                     time: new Date().toLocaleTimeString('en-US', { hour12: false }),
                     tag: '--',
                     message: `Skipped \`${node.data.label}\` (disabled)`,
                 })
-                // Still follow edges
                 const outEdges = edges.filter((e) => e.source === currentId)
                 outEdges.forEach((e) => queue.push(e.target))
                 continue
@@ -353,12 +645,10 @@ const useWorkflowStore = create((set, get) => ({
             set({ activeNodeId: currentId })
             await sleep(800)
 
-            // Generate log message
             const logFn = LOG_MESSAGES[node.data.nodeType]
             let logResult = logFn ? logFn(node.data.config) : { tag: '--', message: `Executed ${node.data.label}` }
             let chosenBranch = null
 
-            // All entries now return { tag, message, branch? }
             if (logResult.branch) {
                 chosenBranch = logResult.branch
             }
@@ -369,16 +659,11 @@ const useWorkflowStore = create((set, get) => ({
                 message: logResult.message || '',
             })
 
-            // Follow edges
             const outEdges = edges.filter((e) => e.source === currentId)
 
             if (MULTI_OUTPUT_TYPES.includes(node.data.nodeType) && chosenBranch) {
-                // For multi-output: follow only the chosen branch
                 const chosenEdge = outEdges.find((e) => e.sourceHandle === chosenBranch)
                 if (chosenEdge) queue.push(chosenEdge.target)
-                // Also log non-taken branch
-                const otherEdges = outEdges.filter((e) => e.sourceHandle !== chosenBranch)
-                // Don't follow other branches
             } else {
                 outEdges.forEach((e) => queue.push(e.target))
             }
@@ -486,7 +771,7 @@ const useWorkflowStore = create((set, get) => ({
     },
 }))
 
-// Simple applyNodeChanges helper (since we're not using @reactflow/core's)
+// Simple applyNodeChanges helper
 function applyNodeChanges(changes, nodes) {
     let result = [...nodes]
     for (const change of changes) {
