@@ -76,11 +76,16 @@ export default function Dashboard() {
     const topLeads = stats?.topLeads || []
     const workflowCounts = stats?.workflowCounts || []
 
+    // Static chart data (user preference)
+    const barHeights = ['40%', '65%', '85%', '50%', '95%', '20%', '15%']
+    const barValues = [82, 130, 170, 100, 190, 40, 30]
+    const dayLabels = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+
     const statCards = [
-        { label: 'TOTAL LEADS', value: totalLeads.toLocaleString(), icon: 'solar:users-group-two-rounded-linear', trend: `${p.new || 0} NEW`, trendUp: true, bottom: `${p.contacted || 0} CONTACTED`, link: '/leads' },
-        { label: 'LOGS RECORDED', value: totalLogs.toLocaleString(), icon: 'solar:letter-linear', trend: `${logSent} SENT`, trendUp: true, bottom: `${logFailed} FAILED`, link: '/logs' },
-        { label: 'REPLIED', value: (p.replied || 0).toLocaleString(), icon: 'solar:reply-linear', trend: `${totalLeads ? ((p.replied / totalLeads) * 100).toFixed(1) : 0}%`, trendUp: (p.replied || 0) > 0, bottom: 'OF ALL LEADS', link: '/leads' },
-        { label: 'CONVERTED', value: (p.converted || 0).toLocaleString(), icon: 'solar:check-circle-linear', trend: `${totalLeads ? ((p.converted / totalLeads) * 100).toFixed(1) : 0}%`, trendUp: (p.converted || 0) > 0, bottom: 'CONVERSION RATE', link: '/leads' },
+        { label: 'TOTAL LEADS', value: totalLeads.toLocaleString(), icon: 'solar:users-group-two-rounded-linear', trend: `${p.new || 0} NEW`, trendUp: true, bottom: `${p.contacted || 0} CONTACTED`, link: '/app/leads' },
+        { label: 'LOGS RECORDED', value: totalLogs.toLocaleString(), icon: 'solar:letter-linear', trend: `${logSent} SENT`, trendUp: true, bottom: `${logFailed} FAILED`, link: '/app/logs' },
+        { label: 'REPLIED', value: (p.replied || 0).toLocaleString(), icon: 'solar:reply-linear', trend: `${totalLeads ? ((p.replied / totalLeads) * 100).toFixed(1) : 0}%`, trendUp: (p.replied || 0) > 0, bottom: 'OF ALL LEADS', link: '/app/leads' },
+        { label: 'CONVERTED', value: (p.converted || 0).toLocaleString(), icon: 'solar:check-circle-linear', trend: `${totalLeads ? ((p.converted / totalLeads) * 100).toFixed(1) : 0}%`, trendUp: (p.converted || 0) > 0, bottom: 'CONVERSION RATE', link: '/app/leads' },
     ]
 
     const pipeline = [
@@ -120,10 +125,10 @@ export default function Dashboard() {
                         <span className="text-[var(--success)] text-[8px] animate-blink status-dot">●</span>
                         <span className="text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-widest">{workflowCounts.length} WORKFLOWS ACTIVE</span>
                     </div>
-                    <button onClick={() => navigate('/workflows')} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
+                    <button onClick={() => navigate('/app/workflows')} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
                         <Icon icon="solar:play-bold" className="mr-2 text-xs" /> VIEW WORKFLOWS
                     </button>
-                    <button onClick={() => navigate('/leads')} className="btn-base btn-accent">
+                    <button onClick={() => navigate('/app/leads')} className="btn-base btn-accent">
                         <Icon icon="solar:add-circle-bold" className="mr-2 text-xs" /> VIEW LEADS
                     </button>
                 </div>
@@ -191,19 +196,21 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-1 relative border-l-2 border-[var(--border-bright)] border-b-2 pb-6 pl-2 flex items-end gap-1.5" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 19%, var(--border) 20%)' }}>
                         <div className="absolute -left-8 bottom-0 text-[10px] font-bold text-[var(--text-muted)]">0</div>
-                        <div className="absolute -left-9 top-[80%] text-[10px] font-bold text-[var(--text-muted)]">50</div>
-                        <div className="absolute -left-9 top-[40%] text-[10px] font-bold text-[var(--text-muted)]">150</div>
-                        <div className="absolute -left-9 top-0 text-[10px] font-bold text-[var(--text-muted)]">200</div>
-                        {dayLabels.map((day, i) => (
-                            <div
-                                key={day}
-                                className={`flex-1 ${i === 3 || i === 5 || i === 6 ? 'bg-[var(--border)]' : 'bg-accent'} border-2 border-[var(--border-bright)] hover:-translate-y-1 transition-transform relative group`}
-                                style={{ height: barHeights[i] }}
-                            >
-                                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[var(--text-muted)]">{day}</span>
-                                <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] px-3 py-1 text-[10px] font-bold text-[var(--text-primary)] z-10">{barValues[i]}</div>
-                            </div>
-                        ))}
+                        <div className="absolute -left-9 top-[50%] text-[10px] font-bold text-[var(--text-muted)]">{Math.round(maxChart / 2)}</div>
+                        <div className="absolute -left-9 top-0 text-[10px] font-bold text-[var(--text-muted)]">{maxChart}</div>
+                        {chartData.map((day, i) => {
+                            const heightPct = maxChart > 0 ? (day.value / maxChart) * 100 : 0
+                            return (
+                                <div
+                                    key={day.name}
+                                    className={`flex-1 ${day.value === 0 ? 'bg-[var(--border)]' : 'bg-accent'} border-2 border-[var(--border-bright)] hover:-translate-y-1 transition-transform relative group`}
+                                    style={{ height: `${Math.max(heightPct, 3)}%` }}
+                                >
+                                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[var(--text-muted)]">{day.name}</span>
+                                    <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] px-3 py-1 text-[10px] font-bold text-[var(--text-primary)] z-10 whitespace-nowrap">{day.value}</div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
 
@@ -258,7 +265,7 @@ export default function Dashboard() {
                         <div className="brutalist-card p-4 min-w-[280px] text-center text-[11px] text-[var(--text-muted)] font-bold">No active workflows</div>
                     )}
                     {workflowCounts.map((wf) => (
-                        <div key={wf._id} onClick={() => navigate('/workflows')} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3 cursor-pointer hover:-translate-y-[2px] transition-transform">
+                        <div key={wf._id} onClick={() => navigate('/app/workflows')} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3 cursor-pointer hover:-translate-y-[2px] transition-transform">
                             <div className="flex justify-between items-start">
                                 <span className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest">{wf._id}</span>
                                 <span className="badge badge-success">ACTIVE</span>
@@ -269,7 +276,7 @@ export default function Dashboard() {
                             <div className="flex gap-4 text-[10px] font-bold tracking-widest">
                                 <span className="text-[var(--text-muted)]">LEADS: <span className="text-[var(--text-primary)]">{wf.count}</span></span>
                             </div>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/workflows') }} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] w-full">
+                            <button onClick={(e) => { e.stopPropagation(); navigate('/app/workflows') }} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] w-full">
                                 VIEW WORKFLOW
                             </button>
                         </div>
@@ -281,7 +288,7 @@ export default function Dashboard() {
             <div className="brutalist-table-container mb-6">
                 <div className="px-5 py-3 bg-[var(--bg-raised)] border-b-2 border-[var(--border-bright)] flex justify-between items-center">
                     <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold">TOP LEADS ACTIVITY</h3>
-                    <Link to="/leads" className="text-[10px] font-bold text-accent uppercase tracking-widest hover:underline">VIEW ALL LEADS →</Link>
+                    <Link to="/app/leads" className="text-[10px] font-bold text-accent uppercase tracking-widest hover:underline">VIEW ALL LEADS →</Link>
                 </div>
                 <table className="w-full text-left border-collapse">
                     <thead className="bg-[var(--bg-raised)]">
@@ -304,7 +311,7 @@ export default function Dashboard() {
                                 <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.workflow || '—'}</td>
                                 <td className="p-[12px_16px] text-[var(--text-muted)]">{lead.lastAction || 'No Actions Yet'}</td>
                                 <td className="p-[12px_16px] text-center">
-                                    <button onClick={() => navigate('/leads')} className="w-[28px] h-[28px] page-btn bg-[var(--bg-raised)] inline-flex items-center justify-center text-[var(--text-secondary)] hover:-translate-y-[1px]">
+                                    <button onClick={() => navigate('/app/leads')} className="w-[28px] h-[28px] page-btn bg-[var(--bg-raised)] inline-flex items-center justify-center text-[var(--text-secondary)] hover:-translate-y-[1px]">
                                         <Icon icon="solar:eye-linear" className="text-sm" />
                                     </button>
                                 </td>

@@ -2,18 +2,30 @@ import Bull from 'bull'
 
 const redisUrl = process.env.REDIS_URL
 
-export const outreachQueue = redisUrl
-    ? new Bull('outreach', redisUrl)
-    : new Bull('outreach', {
-          redis: { host: 'localhost', port: 6379 }
-      })
+let outreachQueue = null
 
-outreachQueue.on('completed', (job) => {
-    console.log(`Job ${job.id} completed`)
-})
+if (redisUrl) {
+    try {
+        outreachQueue = new Bull('outreach', redisUrl)
 
-outreachQueue.on('failed', (job, err) => {
-    console.error(`Job ${job.id} failed:`, err)
-})
+        outreachQueue.on('completed', (job) => {
+            console.log(`Job ${job.id} completed`)
+        })
 
+        outreachQueue.on('failed', (job, err) => {
+            console.error(`Job ${job.id} failed:`, err.message)
+        })
+
+        outreachQueue.on('error', (err) => {
+            console.error('Queue error:', err.message)
+        })
+    } catch (err) {
+        console.warn('Bull queue init failed:', err.message)
+        outreachQueue = null
+    }
+} else {
+    console.warn('Bull queue skipped: REDIS_URL not configured. (Bull requires a standard Redis TCP connection and does not work with Upstash REST). Background automation jobs will not run.')
+}
+
+export { outreachQueue }
 export default outreachQueue
