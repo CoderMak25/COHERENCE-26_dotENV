@@ -7,11 +7,15 @@ const router = Router()
 // Dashboard stats — must be before :id routes
 router.get('/dashboard/stats', lc.getDashboardStats)
 
+// Bulk rescore — must be before :id routes
+router.post('/rescore-all', lc.rescoreAll)
+
 router.get('/', lc.getLeads)
 router.get('/:id', lc.getOneLead)
 router.get('/:id/history', lc.getLeadHistory)
 router.post('/', lc.createLead)
 router.post('/import', upload.single('file'), lc.importLeads)
+router.post('/:id/engagement', lc.recordEngagement)
 router.post('/:id/takeover', lc.takeOverLead)
 router.post('/:id/pause', lc.pauseLead)
 router.post('/:id/resume', lc.resumeLead)

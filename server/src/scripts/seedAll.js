@@ -5,6 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Lead from '../models/Lead.js';
 import Log from '../models/Log.js';
+import { calculateLeadScore, getScoreLabel } from '../services/leadScoringService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,24 +49,46 @@ const seedAll = async () => {
             'LinkedIn Message Sent', 'Email Bounced', null
         ];
 
-        const leadsToInsert = leadRows.map((row, i) => ({
-            name: row.Name,
-            email: row.Email.toLowerCase(),
-            company: row.Company || '',
-            position: row.Role || '',
-            tags: [row.Industry, row.Location].filter(Boolean),
-            status: statuses[i % statuses.length],
-            workflow: workflows[i % workflows.length],
-            lastAction: lastActions[i % lastActions.length],
-            metadata: new Map([
-                ['linkedin', row.LinkedIn || ''],
-                ['industry', row.Industry || ''],
-                ['location', row.Location || '']
-            ])
-        }));
+        // Sample engagement events for demo
+        const sampleEngagements = [
+            [],
+            [{ type: 'email_open', time: new Date(Date.now() - 2 * 86400000) }],
+            [{ type: 'email_open', time: new Date(Date.now() - 3 * 86400000) }, { type: 'link_click', time: new Date(Date.now() - 2 * 86400000) }],
+            [{ type: 'reply_received', time: new Date(Date.now() - 1 * 86400000) }],
+            [{ type: 'email_open', time: new Date(Date.now() - 4 * 86400000) }, { type: 'reply_received', time: new Date(Date.now() - 2 * 86400000) }],
+            [],
+            [{ type: 'email_open', time: new Date(Date.now() - 1 * 86400000) }],
+            [{ type: 'ignored', time: new Date(Date.now() - 5 * 86400000) }],
+        ];
+
+        const leadsToInsert = leadRows.map((row, i) => {
+            const leadData = {
+                name: row.Name,
+                email: row.Email.toLowerCase(),
+                linkedinUrl: row.LinkedIn || '',
+                company: row.Company || '',
+                position: row.Role || '',
+                industry: row.Industry || '',
+                tags: [row.Industry, row.Location].filter(Boolean),
+                status: statuses[i % statuses.length],
+                workflow: workflows[i % workflows.length],
+                lastAction: lastActions[i % lastActions.length],
+                engagementHistory: sampleEngagements[i % sampleEngagements.length],
+                metadata: new Map([
+                    ['linkedin', row.LinkedIn || ''],
+                    ['industry', row.Industry || ''],
+                    ['location', row.Location || '']
+                ])
+            };
+            // Calculate score
+            const score = calculateLeadScore(leadData);
+            leadData.score = score;
+            leadData.scoreLabel = getScoreLabel(score);
+            return leadData;
+        });
 
         await Lead.insertMany(leadsToInsert);
-        console.log(`Seeded ${leadsToInsert.length} leads`);
+        console.log(`Seeded ${leadsToInsert.length} leads with scores`);
 
         // --- SEED LOGS with distributed timestamps ---
         await Log.deleteMany({});
