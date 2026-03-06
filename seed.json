@@ -1,434 +1,2091 @@
-[
-  {
-    "_id": "69aab5871b1fa2371eb435e0",
-    "name": "John Carter",
-    "email": "john.carter@example.com",
-    "company": "Tesla",
-    "position": "Electrical Engineer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/johncarter",
-      "Industry": "Automotive",
-      "Location": "USA"
+{
+  "leads": [
+    {
+      "_id": "69aade6d1a7b0651ce28e97e",
+      "name": "John Carter",
+      "email": "john.carter@example.com",
+      "company": "Tesla",
+      "position": "Electrical Engineer",
+      "tags": [
+        "Automotive",
+        "USA"
+      ],
+      "status": "New",
+      "workflow": "Q1 Outbound",
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/johncarter",
+        "industry": "Automotive",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.156Z",
+      "updatedAt": "2026-03-06T14:02:21.156Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.833Z",
-    "updatedAt": "2026-03-06T11:07:51.833Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e1",
-    "name": "Sarah Lee",
-    "email": "sarah.lee@example.com",
-    "company": "Google",
-    "position": "Product Manager",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/sarahlee",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e97f",
+      "name": "Sarah Lee",
+      "email": "sarah.lee@example.com",
+      "company": "Google",
+      "position": "Product Manager",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "Contacted",
+      "workflow": "Enterprise",
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/sarahlee",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e2",
-    "name": "Michael Brown",
-    "email": "michael.brown@example.com",
-    "company": "Amazon",
-    "position": "Data Analyst",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "",
-      "Industry": "E-commerce",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e980",
+      "name": "Michael Brown",
+      "email": "michael.brown@example.com",
+      "company": "Amazon",
+      "position": "Data Analyst",
+      "tags": [
+        "E-commerce",
+        "USA"
+      ],
+      "status": "Opened",
+      "workflow": null,
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "E-commerce",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e3",
-    "name": "Emily Davis",
-    "email": "emily.davis@dummy.com",
-    "company": "Microsoft",
-    "position": "Software Engineer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/emilydavis",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e981",
+      "name": "Emily Davis",
+      "email": "emily.davis@example.com",
+      "company": "Microsoft",
+      "position": "Software Engineer",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "Replied",
+      "workflow": null,
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/emilydavis",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e4",
-    "name": "David Wilson",
-    "email": "david.wilson@example.com",
-    "company": "Meta",
-    "position": "Backend Engineer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/davidwilson",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e982",
+      "name": "David Wilson",
+      "email": "david.wilson@example.com",
+      "company": "Meta",
+      "position": "Backend Engineer",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "Converted",
+      "workflow": "Q1 Outbound",
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/davidwilson",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e5",
-    "name": "Sophia Martinez",
-    "email": "sophia.martinez@example.com",
-    "company": "Netflix",
-    "position": "Content Strategist",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "",
-      "Industry": "Entertainment",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e983",
+      "name": "Sophia Martinez",
+      "email": "sophia.martinez@example.com",
+      "company": "Netflix",
+      "position": "Content Strategist",
+      "tags": [
+        "Entertainment",
+        "USA"
+      ],
+      "status": "New",
+      "workflow": "Enterprise",
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Entertainment",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e6",
-    "name": "Daniel Anderson",
-    "email": "daniel.anderson@dummy.com",
-    "company": "IBM",
-    "position": "Cloud Architect",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/danielanderson",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e984",
+      "name": "Daniel Anderson",
+      "email": "daniel.anderson@example.com",
+      "company": "IBM",
+      "position": "Cloud Architect",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "Contacted",
+      "workflow": null,
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/danielanderson",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e7",
-    "name": "Olivia Thomas",
-    "email": "olivia.thomas@example.com",
-    "company": "Adobe",
-    "position": "UX Designer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/oliviathomas",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e985",
+      "name": "Olivia Thomas",
+      "email": "olivia.thomas@example.com",
+      "company": "Adobe",
+      "position": "UX Designer",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "Opened",
+      "workflow": null,
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/oliviathomas",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e8",
-    "name": "James Taylor",
-    "email": "james.taylor@example.com",
-    "company": "Oracle",
-    "position": "Database Engineer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e986",
+      "name": "James Taylor",
+      "email": "james.taylor@example.com",
+      "company": "Oracle",
+      "position": "Database Engineer",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "Replied",
+      "workflow": "Q1 Outbound",
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435e9",
-    "name": "Isabella Moore",
-    "email": "isabella.moore@dummy.com",
-    "company": "Intel",
-    "position": "Hardware Engineer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/isabellamoore",
-      "Industry": "Semiconductors",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e987",
+      "name": "Isabella Moore",
+      "email": "isabella.moore@example.com",
+      "company": "Intel",
+      "position": "Hardware Engineer",
+      "tags": [
+        "Semiconductors",
+        "USA"
+      ],
+      "status": "Converted",
+      "workflow": "Enterprise",
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/isabellamoore",
+        "industry": "Semiconductors",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435ea",
-    "name": "William Jackson",
-    "email": "william.jackson@example.com",
-    "company": "Apple",
-    "position": "iOS Developer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/williamjackson",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e988",
+      "name": "William Jackson",
+      "email": "william.jackson@example.com",
+      "company": "Apple",
+      "position": "iOS Developer",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "New",
+      "workflow": null,
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/williamjackson",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435eb",
-    "name": "Mia White",
-    "email": "mia.white@example.com",
-    "company": "Spotify",
-    "position": "Marketing Manager",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "",
-      "Industry": "Music",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e989",
+      "name": "Mia White",
+      "email": "mia.white@example.com",
+      "company": "Spotify",
+      "position": "Marketing Manager",
+      "tags": [
+        "Music",
+        "USA"
+      ],
+      "status": "Contacted",
+      "workflow": null,
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Music",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435ec",
-    "name": "Benjamin Harris",
-    "email": "ben.harris@example.com",
-    "company": "Salesforce",
-    "position": "Sales Manager",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/benharris",
-      "Industry": "SaaS",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e98a",
+      "name": "Benjamin Harris",
+      "email": "ben.harris@example.com",
+      "company": "Salesforce",
+      "position": "Sales Manager",
+      "tags": [
+        "SaaS",
+        "USA"
+      ],
+      "status": "Opened",
+      "workflow": "Q1 Outbound",
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/benharris",
+        "industry": "SaaS",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435ed",
-    "name": "Charlotte Martin",
-    "email": "charlotte.martin@dummy.com",
-    "company": "Uber",
-    "position": "Operations Manager",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/charlottemartin",
-      "Industry": "Transportation",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e98b",
+      "name": "Charlotte Martin",
+      "email": "charlotte.martin@example.com",
+      "company": "Uber",
+      "position": "Operations Manager",
+      "tags": [
+        "Transportation",
+        "USA"
+      ],
+      "status": "Replied",
+      "workflow": "Enterprise",
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/charlottemartin",
+        "industry": "Transportation",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.834Z",
-    "updatedAt": "2026-03-06T11:07:51.834Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435ee",
-    "name": "Lucas Thompson",
-    "email": "lucas.thompson@example.com",
-    "company": "Airbnb",
-    "position": "Business Analyst",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "",
-      "Industry": "Hospitality",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e98c",
+      "name": "Lucas Thompson",
+      "email": "lucas.thompson@example.com",
+      "company": "Airbnb",
+      "position": "Business Analyst",
+      "tags": [
+        "Hospitality",
+        "USA"
+      ],
+      "status": "Converted",
+      "workflow": null,
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Hospitality",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435ef",
-    "name": "Amelia Garcia",
-    "email": "amelia.garcia@example.com",
-    "company": "Stripe",
-    "position": "Fintech Engineer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/ameliagarcia",
-      "Industry": "Finance",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e98d",
+      "name": "Amelia Garcia",
+      "email": "amelia.garcia@example.com",
+      "company": "Stripe",
+      "position": "Fintech Engineer",
+      "tags": [
+        "Finance",
+        "USA"
+      ],
+      "status": "New",
+      "workflow": null,
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/ameliagarcia",
+        "industry": "Finance",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f0",
-    "name": "Henry Clark",
-    "email": "henry.clark@dummy.com",
-    "company": "Nvidia",
-    "position": "AI Researcher",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/henryclark",
-      "Industry": "Semiconductors",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e98e",
+      "name": "Henry Clark",
+      "email": "henry.clark@example.com",
+      "company": "Nvidia",
+      "position": "AI Researcher",
+      "tags": [
+        "Semiconductors",
+        "USA"
+      ],
+      "status": "Contacted",
+      "workflow": "Q1 Outbound",
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/henryclark",
+        "industry": "Semiconductors",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f1",
-    "name": "Evelyn Rodriguez",
-    "email": "evelyn.rodriguez@example.com",
-    "company": "PayPal",
-    "position": "Security Engineer",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "",
-      "Industry": "Finance",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e98f",
+      "name": "Evelyn Rodriguez",
+      "email": "evelyn.rodriguez@example.com",
+      "company": "PayPal",
+      "position": "Security Engineer",
+      "tags": [
+        "Finance",
+        "USA"
+      ],
+      "status": "Opened",
+      "workflow": "Enterprise",
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Finance",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f2",
-    "name": "Alexander Lewis",
-    "email": "alex.lewis@example.com",
-    "company": "LinkedIn",
-    "position": "Data Scientist",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/alexlewis",
-      "Industry": "Technology",
-      "Location": "USA"
+    {
+      "_id": "69aade6d1a7b0651ce28e990",
+      "name": "Alexander Lewis",
+      "email": "alex.lewis@example.com",
+      "company": "LinkedIn",
+      "position": "Data Scientist",
+      "tags": [
+        "Technology",
+        "USA"
+      ],
+      "status": "Replied",
+      "workflow": null,
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/alexlewis",
+        "industry": "Technology",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f3",
-    "name": "Harper Walker",
-    "email": "harper.walker@dummy.com",
-    "company": "Shopify",
-    "position": "E-commerce Manager",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "https://linkedin.com/in/harperwalker",
-      "Industry": "E-commerce",
-      "Location": "USAR\u0000a\u0000h\u0000u\u0000l\u0000 \u0000S\u0000h\u0000a\u0000r\u0000m\u0000a\u0000"
+    {
+      "_id": "69aade6d1a7b0651ce28e991",
+      "name": "Harper Walker",
+      "email": "harper.walker@example.com",
+      "company": "Shopify",
+      "position": "E-commerce Manager",
+      "tags": [
+        "E-commerce",
+        "USA"
+      ],
+      "status": "Converted",
+      "workflow": null,
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "https://linkedin.com/in/harperwalker",
+        "industry": "E-commerce",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f4",
-    "name": "\u0000P\u0000r\u0000i\u0000y\u0000a\u0000 \u0000M\u0000e\u0000h\u0000t\u0000a\u0000",
-    "email": "\u0000p\u0000r\u0000i\u0000y\u0000a\u0000@\u0000i\u0000n\u0000n\u0000o\u0000v\u0000a\u0000t\u0000e\u0000x\u0000.\u0000i\u0000o\u0000",
-    "company": "\u0000I\u0000n\u0000n\u0000o\u0000v\u0000a\u0000t\u0000e\u0000X\u0000",
-    "position": "\u0000V\u0000P\u0000 \u0000S\u0000a\u0000l\u0000e\u0000s\u0000",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "\u0000",
-      "Industry": "\u0000S\u0000t\u0000a\u0000r\u0000t\u0000u\u0000p\u0000",
-      "Location": "\u0000\r\u0000"
+    {
+      "_id": "69aade6d1a7b0651ce28e992",
+      "name": "Rahul Sharma",
+      "email": "rahul@techcorp.com",
+      "company": "TechCorp Inc.",
+      "position": "CTO",
+      "tags": [
+        "Technology",
+        "India"
+      ],
+      "status": "New",
+      "workflow": "Q1 Outbound",
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Technology",
+        "location": "India"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.158Z",
+      "updatedAt": "2026-03-06T14:02:21.158Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f5",
-    "name": "\u0000J\u0000a\u0000m\u0000e\u0000s\u0000 \u0000W\u0000a\u0000l\u0000k\u0000e\u0000r\u0000",
-    "email": "\u0000j\u0000.\u0000w\u0000a\u0000l\u0000k\u0000e\u0000r\u0000@\u0000g\u0000l\u0000o\u0000b\u0000e\u0000x\u0000.\u0000c\u0000o\u0000m\u0000",
-    "company": "\u0000G\u0000l\u0000o\u0000b\u0000e\u0000x\u0000 \u0000L\u0000t\u0000d\u0000",
-    "position": "\u0000D\u0000i\u0000r\u0000e\u0000c\u0000t\u0000o\u0000r\u0000",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "\u0000",
-      "Industry": "\u0000M\u0000i\u0000d\u0000-\u0000M\u0000a\u0000r\u0000k\u0000e\u0000t\u0000",
-      "Location": "\u0000\r\u0000"
+    {
+      "_id": "69aade6d1a7b0651ce28e993",
+      "name": "Priya Mehta",
+      "email": "priya@innovatex.io",
+      "company": "InnovateX",
+      "position": "VP Sales",
+      "tags": [
+        "Startup",
+        "India"
+      ],
+      "status": "Contacted",
+      "workflow": "Enterprise",
+      "lastAction": "Sent Initial Email",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Startup",
+        "location": "India"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.159Z",
+      "updatedAt": "2026-03-06T14:02:21.159Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f6",
-    "name": "\u0000S\u0000a\u0000r\u0000a\u0000 \u0000K\u0000i\u0000m\u0000",
-    "email": "\u0000s\u0000a\u0000r\u0000a\u0000@\u0000n\u0000e\u0000x\u0000u\u0000s\u0000.\u0000i\u0000o\u0000",
-    "company": "\u0000N\u0000e\u0000x\u0000u\u0000s\u0000 \u0000H\u0000e\u0000a\u0000l\u0000t\u0000h\u0000",
-    "position": "\u0000F\u0000o\u0000u\u0000n\u0000d\u0000e\u0000r\u0000",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "\u0000",
-      "Industry": "\u0000H\u0000e\u0000a\u0000l\u0000t\u0000h\u0000c\u0000a\u0000r\u0000e\u0000",
-      "Location": "\u0000\r\u0000"
+    {
+      "_id": "69aade6d1a7b0651ce28e994",
+      "name": "James Walker",
+      "email": "j.walker@globex.com",
+      "company": "Globex Ltd",
+      "position": "Director",
+      "tags": [
+        "Mid-Market",
+        "UK"
+      ],
+      "status": "Opened",
+      "workflow": null,
+      "lastAction": "Follow-up Sent",
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Mid-Market",
+        "location": "UK"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.159Z",
+      "updatedAt": "2026-03-06T14:02:21.159Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  },
-  {
-    "_id": "69aab5871b1fa2371eb435f7",
-    "name": "\u0000",
-    "email": "\u0000@dummy.com",
-    "company": "",
-    "position": "",
-    "tags": [],
-    "status": "New",
-    "currentStep": 0,
-    "metadata": {
-      "LinkedIn": "",
-      "Industry": "",
-      "Location": ""
+    {
+      "_id": "69aade6d1a7b0651ce28e995",
+      "name": "Sara Kim",
+      "email": "sara@nexus.io",
+      "company": "Nexus Health",
+      "position": "Founder",
+      "tags": [
+        "Healthcare",
+        "USA"
+      ],
+      "status": "Replied",
+      "workflow": null,
+      "lastAction": null,
+      "currentStep": 0,
+      "metadata": {
+        "linkedin": "",
+        "industry": "Healthcare",
+        "location": "USA"
+      },
+      "__v": 0,
+      "createdAt": "2026-03-06T14:02:21.159Z",
+      "updatedAt": "2026-03-06T14:02:21.159Z"
+    }
+  ],
+  "logs": [
+    {
+      "_id": "69aade6d1a7b0651ce28e99a",
+      "leadId": "69aade6d1a7b0651ce28e97e",
+      "leadName": "John Carter",
+      "action": "Profile Viewed",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 296,
+      "createdAt": "2026-03-04T02:31:50.582Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
     },
-    "__v": 0,
-    "createdAt": "2026-03-06T11:07:51.835Z",
-    "updatedAt": "2026-03-06T11:07:51.835Z"
-  }
-]
+    {
+      "_id": "69aade6d1a7b0651ce28e99b",
+      "leadId": "69aade6d1a7b0651ce28e97e",
+      "leadName": "John Carter",
+      "action": "Email Opened",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 216,
+      "createdAt": "2026-03-04T04:15:02.998Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e99c",
+      "leadId": "69aade6d1a7b0651ce28e97e",
+      "leadName": "John Carter",
+      "action": "Follow-up Email",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 29,
+      "createdAt": "2026-03-02T18:51:39.797Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e99d",
+      "leadId": "69aade6d1a7b0651ce28e97e",
+      "leadName": "John Carter",
+      "action": "Email Opened",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 242,
+      "createdAt": "2026-03-06T05:13:18.887Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e99e",
+      "leadId": "69aade6d1a7b0651ce28e97e",
+      "leadName": "John Carter",
+      "action": "Email Opened",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 185,
+      "createdAt": "2026-03-05T17:21:47.855Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e99f",
+      "leadId": "69aade6d1a7b0651ce28e97e",
+      "leadName": "John Carter",
+      "action": "Email Opened",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 483,
+      "createdAt": "2026-02-27T14:43:44.841Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a0",
+      "leadId": "69aade6d1a7b0651ce28e97f",
+      "leadName": "Sarah Lee",
+      "action": "Email Opened",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 465,
+      "createdAt": "2026-03-01T16:08:44.882Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a1",
+      "leadId": "69aade6d1a7b0651ce28e97f",
+      "leadName": "Sarah Lee",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 167,
+      "createdAt": "2026-03-05T21:40:44.546Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a2",
+      "leadId": "69aade6d1a7b0651ce28e97f",
+      "leadName": "Sarah Lee",
+      "action": "Follow-up Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 341,
+      "createdAt": "2026-03-03T12:44:54.563Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a3",
+      "leadId": "69aade6d1a7b0651ce28e97f",
+      "leadName": "Sarah Lee",
+      "action": "Email Opened",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 184,
+      "createdAt": "2026-03-04T09:48:04.185Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a4",
+      "leadId": "69aade6d1a7b0651ce28e97f",
+      "leadName": "Sarah Lee",
+      "action": "Sent Initial Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 455,
+      "createdAt": "2026-03-04T20:13:36.706Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a5",
+      "leadId": "69aade6d1a7b0651ce28e97f",
+      "leadName": "Sarah Lee",
+      "action": "Follow-up Email",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 264,
+      "createdAt": "2026-03-01T22:27:02.695Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a6",
+      "leadId": "69aade6d1a7b0651ce28e980",
+      "leadName": "Michael Brown",
+      "action": "Profile Viewed",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 500,
+      "createdAt": "2026-03-05T18:08:37.038Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a7",
+      "leadId": "69aade6d1a7b0651ce28e980",
+      "leadName": "Michael Brown",
+      "action": "LinkedIn Connection Request",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 505,
+      "createdAt": "2026-03-02T02:56:43.296Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a8",
+      "leadId": "69aade6d1a7b0651ce28e980",
+      "leadName": "Michael Brown",
+      "action": "Email Opened",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 139,
+      "createdAt": "2026-03-02T08:42:11.056Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9a9",
+      "leadId": "69aade6d1a7b0651ce28e980",
+      "leadName": "Michael Brown",
+      "action": "Email Opened",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 487,
+      "createdAt": "2026-03-05T05:06:44.672Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9aa",
+      "leadId": "69aade6d1a7b0651ce28e980",
+      "leadName": "Michael Brown",
+      "action": "Email Opened",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 398,
+      "createdAt": "2026-03-06T05:04:51.122Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ab",
+      "leadId": "69aade6d1a7b0651ce28e981",
+      "leadName": "Emily Davis",
+      "action": "Email Opened",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 73,
+      "createdAt": "2026-03-01T21:18:40.530Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ac",
+      "leadId": "69aade6d1a7b0651ce28e981",
+      "leadName": "Emily Davis",
+      "action": "Profile Viewed",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 472,
+      "createdAt": "2026-03-01T18:17:14.166Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ad",
+      "leadId": "69aade6d1a7b0651ce28e981",
+      "leadName": "Emily Davis",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 417,
+      "createdAt": "2026-03-05T03:11:50.144Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ae",
+      "leadId": "69aade6d1a7b0651ce28e981",
+      "leadName": "Emily Davis",
+      "action": "Sent Initial Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 217,
+      "createdAt": "2026-02-28T04:26:29.414Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9af",
+      "leadId": "69aade6d1a7b0651ce28e981",
+      "leadName": "Emily Davis",
+      "action": "Profile Viewed",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 318,
+      "createdAt": "2026-03-02T12:00:06.001Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b0",
+      "leadId": "69aade6d1a7b0651ce28e981",
+      "leadName": "Emily Davis",
+      "action": "LinkedIn Connection Request",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 220,
+      "createdAt": "2026-03-04T13:31:10.761Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b1",
+      "leadId": "69aade6d1a7b0651ce28e982",
+      "leadName": "David Wilson",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 343,
+      "createdAt": "2026-03-05T09:12:41.567Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b2",
+      "leadId": "69aade6d1a7b0651ce28e982",
+      "leadName": "David Wilson",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 363,
+      "createdAt": "2026-03-05T18:49:35.714Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b3",
+      "leadId": "69aade6d1a7b0651ce28e982",
+      "leadName": "David Wilson",
+      "action": "Sent Initial Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 211,
+      "createdAt": "2026-02-28T08:40:04.213Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b4",
+      "leadId": "69aade6d1a7b0651ce28e982",
+      "leadName": "David Wilson",
+      "action": "Email Opened",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 74,
+      "createdAt": "2026-03-04T20:31:49.488Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.219Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b5",
+      "leadId": "69aade6d1a7b0651ce28e982",
+      "leadName": "David Wilson",
+      "action": "Sent Initial Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 170,
+      "createdAt": "2026-02-28T02:06:46.320Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b6",
+      "leadId": "69aade6d1a7b0651ce28e982",
+      "leadName": "David Wilson",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 328,
+      "createdAt": "2026-03-01T02:58:13.407Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b7",
+      "leadId": "69aade6d1a7b0651ce28e983",
+      "leadName": "Sophia Martinez",
+      "action": "Follow-up Email",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 466,
+      "createdAt": "2026-03-01T19:48:48.972Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b8",
+      "leadId": "69aade6d1a7b0651ce28e983",
+      "leadName": "Sophia Martinez",
+      "action": "Profile Viewed",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 78,
+      "createdAt": "2026-02-28T18:42:04.003Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9b9",
+      "leadId": "69aade6d1a7b0651ce28e983",
+      "leadName": "Sophia Martinez",
+      "action": "Profile Viewed",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 403,
+      "createdAt": "2026-03-05T07:23:37.689Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ba",
+      "leadId": "69aade6d1a7b0651ce28e984",
+      "leadName": "Daniel Anderson",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 302,
+      "createdAt": "2026-02-28T08:16:24.943Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9bb",
+      "leadId": "69aade6d1a7b0651ce28e984",
+      "leadName": "Daniel Anderson",
+      "action": "Profile Viewed",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 416,
+      "createdAt": "2026-03-04T00:14:01.013Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9bc",
+      "leadId": "69aade6d1a7b0651ce28e984",
+      "leadName": "Daniel Anderson",
+      "action": "Follow-up Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 343,
+      "createdAt": "2026-03-06T12:41:02.094Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9bd",
+      "leadId": "69aade6d1a7b0651ce28e984",
+      "leadName": "Daniel Anderson",
+      "action": "Profile Viewed",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 73,
+      "createdAt": "2026-03-04T11:08:16.947Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9be",
+      "leadId": "69aade6d1a7b0651ce28e984",
+      "leadName": "Daniel Anderson",
+      "action": "Email Opened",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 504,
+      "createdAt": "2026-03-04T09:52:46.045Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9bf",
+      "leadId": "69aade6d1a7b0651ce28e985",
+      "leadName": "Olivia Thomas",
+      "action": "Email Opened",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 401,
+      "createdAt": "2026-03-01T22:40:59.115Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c0",
+      "leadId": "69aade6d1a7b0651ce28e985",
+      "leadName": "Olivia Thomas",
+      "action": "Email Opened",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 164,
+      "createdAt": "2026-03-05T22:47:13.874Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c1",
+      "leadId": "69aade6d1a7b0651ce28e985",
+      "leadName": "Olivia Thomas",
+      "action": "Email Opened",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 347,
+      "createdAt": "2026-02-27T14:31:54.120Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c2",
+      "leadId": "69aade6d1a7b0651ce28e985",
+      "leadName": "Olivia Thomas",
+      "action": "Follow-up Email",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 124,
+      "createdAt": "2026-03-01T07:17:23.903Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c3",
+      "leadId": "69aade6d1a7b0651ce28e985",
+      "leadName": "Olivia Thomas",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 371,
+      "createdAt": "2026-03-01T00:14:24.326Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c4",
+      "leadId": "69aade6d1a7b0651ce28e985",
+      "leadName": "Olivia Thomas",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 123,
+      "createdAt": "2026-03-05T03:49:52.462Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c5",
+      "leadId": "69aade6d1a7b0651ce28e986",
+      "leadName": "James Taylor",
+      "action": "LinkedIn Connection Request",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 226,
+      "createdAt": "2026-02-28T01:24:21.028Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c6",
+      "leadId": "69aade6d1a7b0651ce28e986",
+      "leadName": "James Taylor",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 237,
+      "createdAt": "2026-02-28T16:00:08.897Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c7",
+      "leadId": "69aade6d1a7b0651ce28e986",
+      "leadName": "James Taylor",
+      "action": "Profile Viewed",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 36,
+      "createdAt": "2026-03-04T20:10:29.439Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c8",
+      "leadId": "69aade6d1a7b0651ce28e986",
+      "leadName": "James Taylor",
+      "action": "Sent Initial Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 217,
+      "createdAt": "2026-02-28T16:40:12.320Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9c9",
+      "leadId": "69aade6d1a7b0651ce28e986",
+      "leadName": "James Taylor",
+      "action": "LinkedIn Connection Request",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 236,
+      "createdAt": "2026-03-05T13:01:04.462Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ca",
+      "leadId": "69aade6d1a7b0651ce28e986",
+      "leadName": "James Taylor",
+      "action": "Profile Viewed",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 430,
+      "createdAt": "2026-03-04T12:10:00.416Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9cb",
+      "leadId": "69aade6d1a7b0651ce28e987",
+      "leadName": "Isabella Moore",
+      "action": "Email Opened",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 444,
+      "createdAt": "2026-03-03T19:02:57.713Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9cc",
+      "leadId": "69aade6d1a7b0651ce28e987",
+      "leadName": "Isabella Moore",
+      "action": "Sent Initial Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 330,
+      "createdAt": "2026-03-06T14:00:47.153Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9cd",
+      "leadId": "69aade6d1a7b0651ce28e987",
+      "leadName": "Isabella Moore",
+      "action": "LinkedIn Connection Request",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 19,
+      "createdAt": "2026-03-02T02:08:16.781Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ce",
+      "leadId": "69aade6d1a7b0651ce28e987",
+      "leadName": "Isabella Moore",
+      "action": "Email Opened",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 395,
+      "createdAt": "2026-03-03T12:44:31.047Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9cf",
+      "leadId": "69aade6d1a7b0651ce28e988",
+      "leadName": "William Jackson",
+      "action": "Sent Initial Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 146,
+      "createdAt": "2026-03-04T14:51:15.813Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d0",
+      "leadId": "69aade6d1a7b0651ce28e988",
+      "leadName": "William Jackson",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 88,
+      "createdAt": "2026-03-02T03:08:41.179Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d1",
+      "leadId": "69aade6d1a7b0651ce28e988",
+      "leadName": "William Jackson",
+      "action": "Follow-up Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 154,
+      "createdAt": "2026-03-02T21:32:58.650Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d2",
+      "leadId": "69aade6d1a7b0651ce28e988",
+      "leadName": "William Jackson",
+      "action": "Follow-up Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 243,
+      "createdAt": "2026-03-03T13:35:03.039Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d3",
+      "leadId": "69aade6d1a7b0651ce28e988",
+      "leadName": "William Jackson",
+      "action": "Email Opened",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 281,
+      "createdAt": "2026-03-01T12:38:06.743Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d4",
+      "leadId": "69aade6d1a7b0651ce28e989",
+      "leadName": "Mia White",
+      "action": "Follow-up Email",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 403,
+      "createdAt": "2026-03-03T03:28:00.491Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d5",
+      "leadId": "69aade6d1a7b0651ce28e989",
+      "leadName": "Mia White",
+      "action": "LinkedIn Connection Request",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 356,
+      "createdAt": "2026-03-06T13:36:15.403Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d6",
+      "leadId": "69aade6d1a7b0651ce28e989",
+      "leadName": "Mia White",
+      "action": "LinkedIn Connection Request",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 15,
+      "createdAt": "2026-03-06T12:41:21.252Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d7",
+      "leadId": "69aade6d1a7b0651ce28e989",
+      "leadName": "Mia White",
+      "action": "Profile Viewed",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 86,
+      "createdAt": "2026-03-05T05:53:32.827Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d8",
+      "leadId": "69aade6d1a7b0651ce28e989",
+      "leadName": "Mia White",
+      "action": "Follow-up Email",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 343,
+      "createdAt": "2026-03-03T07:35:44.048Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9d9",
+      "leadId": "69aade6d1a7b0651ce28e989",
+      "leadName": "Mia White",
+      "action": "Email Opened",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 221,
+      "createdAt": "2026-02-28T18:41:10.778Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9da",
+      "leadId": "69aade6d1a7b0651ce28e98a",
+      "leadName": "Benjamin Harris",
+      "action": "Follow-up Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 412,
+      "createdAt": "2026-03-05T02:44:59.674Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9db",
+      "leadId": "69aade6d1a7b0651ce28e98a",
+      "leadName": "Benjamin Harris",
+      "action": "Sent Initial Email",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 150,
+      "createdAt": "2026-03-02T04:44:54.147Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9dc",
+      "leadId": "69aade6d1a7b0651ce28e98a",
+      "leadName": "Benjamin Harris",
+      "action": "LinkedIn Connection Request",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 420,
+      "createdAt": "2026-02-28T13:11:58.003Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9dd",
+      "leadId": "69aade6d1a7b0651ce28e98a",
+      "leadName": "Benjamin Harris",
+      "action": "LinkedIn Connection Request",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 414,
+      "createdAt": "2026-03-01T12:28:02.745Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.220Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9de",
+      "leadId": "69aade6d1a7b0651ce28e98b",
+      "leadName": "Charlotte Martin",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 303,
+      "createdAt": "2026-02-27T17:51:03.160Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9df",
+      "leadId": "69aade6d1a7b0651ce28e98b",
+      "leadName": "Charlotte Martin",
+      "action": "LinkedIn Connection Request",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 338,
+      "createdAt": "2026-03-04T11:14:11.299Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e0",
+      "leadId": "69aade6d1a7b0651ce28e98b",
+      "leadName": "Charlotte Martin",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 287,
+      "createdAt": "2026-03-06T13:20:37.600Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e1",
+      "leadId": "69aade6d1a7b0651ce28e98b",
+      "leadName": "Charlotte Martin",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 500,
+      "createdAt": "2026-03-06T09:21:39.502Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e2",
+      "leadId": "69aade6d1a7b0651ce28e98c",
+      "leadName": "Lucas Thompson",
+      "action": "Email Opened",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 158,
+      "createdAt": "2026-03-04T01:53:33.795Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e3",
+      "leadId": "69aade6d1a7b0651ce28e98c",
+      "leadName": "Lucas Thompson",
+      "action": "Email Opened",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 246,
+      "createdAt": "2026-03-04T06:07:11.169Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e4",
+      "leadId": "69aade6d1a7b0651ce28e98c",
+      "leadName": "Lucas Thompson",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 210,
+      "createdAt": "2026-02-27T16:00:12.556Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e5",
+      "leadId": "69aade6d1a7b0651ce28e98d",
+      "leadName": "Amelia Garcia",
+      "action": "Follow-up Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 12,
+      "createdAt": "2026-03-06T04:07:34.627Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e6",
+      "leadId": "69aade6d1a7b0651ce28e98d",
+      "leadName": "Amelia Garcia",
+      "action": "Profile Viewed",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 369,
+      "createdAt": "2026-03-02T05:08:24.222Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e7",
+      "leadId": "69aade6d1a7b0651ce28e98d",
+      "leadName": "Amelia Garcia",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 493,
+      "createdAt": "2026-03-03T18:58:52.244Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e8",
+      "leadId": "69aade6d1a7b0651ce28e98d",
+      "leadName": "Amelia Garcia",
+      "action": "Sent Initial Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 361,
+      "createdAt": "2026-03-05T00:54:56.834Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9e9",
+      "leadId": "69aade6d1a7b0651ce28e98d",
+      "leadName": "Amelia Garcia",
+      "action": "Follow-up Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 41,
+      "createdAt": "2026-03-05T16:11:02.172Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ea",
+      "leadId": "69aade6d1a7b0651ce28e98d",
+      "leadName": "Amelia Garcia",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 415,
+      "createdAt": "2026-02-28T23:22:31.095Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9eb",
+      "leadId": "69aade6d1a7b0651ce28e98e",
+      "leadName": "Henry Clark",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 115,
+      "createdAt": "2026-02-28T08:40:51.027Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ec",
+      "leadId": "69aade6d1a7b0651ce28e98e",
+      "leadName": "Henry Clark",
+      "action": "Follow-up Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 372,
+      "createdAt": "2026-03-06T02:17:35.676Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ed",
+      "leadId": "69aade6d1a7b0651ce28e98e",
+      "leadName": "Henry Clark",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 202,
+      "createdAt": "2026-03-04T13:16:33.447Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ee",
+      "leadId": "69aade6d1a7b0651ce28e98e",
+      "leadName": "Henry Clark",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 282,
+      "createdAt": "2026-03-01T06:05:05.705Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ef",
+      "leadId": "69aade6d1a7b0651ce28e98f",
+      "leadName": "Evelyn Rodriguez",
+      "action": "Sent Initial Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 487,
+      "createdAt": "2026-03-05T20:42:29.090Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f0",
+      "leadId": "69aade6d1a7b0651ce28e98f",
+      "leadName": "Evelyn Rodriguez",
+      "action": "Email Opened",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 211,
+      "createdAt": "2026-03-03T06:14:50.048Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f1",
+      "leadId": "69aade6d1a7b0651ce28e98f",
+      "leadName": "Evelyn Rodriguez",
+      "action": "LinkedIn Connection Request",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 334,
+      "createdAt": "2026-03-04T00:45:48.718Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f2",
+      "leadId": "69aade6d1a7b0651ce28e98f",
+      "leadName": "Evelyn Rodriguez",
+      "action": "Sent Initial Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 332,
+      "createdAt": "2026-03-03T16:44:32.598Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f3",
+      "leadId": "69aade6d1a7b0651ce28e98f",
+      "leadName": "Evelyn Rodriguez",
+      "action": "LinkedIn Connection Request",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 323,
+      "createdAt": "2026-03-04T18:25:42.196Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f4",
+      "leadId": "69aade6d1a7b0651ce28e98f",
+      "leadName": "Evelyn Rodriguez",
+      "action": "LinkedIn Connection Request",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 36,
+      "createdAt": "2026-03-03T23:09:59.522Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f5",
+      "leadId": "69aade6d1a7b0651ce28e990",
+      "leadName": "Alexander Lewis",
+      "action": "LinkedIn Connection Request",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 32,
+      "createdAt": "2026-02-28T09:50:08.872Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f6",
+      "leadId": "69aade6d1a7b0651ce28e990",
+      "leadName": "Alexander Lewis",
+      "action": "Follow-up Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 39,
+      "createdAt": "2026-03-03T04:10:59.543Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f7",
+      "leadId": "69aade6d1a7b0651ce28e990",
+      "leadName": "Alexander Lewis",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "FAILED",
+      "detail": "SMTP timeout — recipient server rejected connection",
+      "latencyMs": 262,
+      "createdAt": "2026-03-05T08:10:22.711Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f8",
+      "leadId": "69aade6d1a7b0651ce28e990",
+      "leadName": "Alexander Lewis",
+      "action": "Follow-up Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 289,
+      "createdAt": "2026-03-04T19:57:13.570Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9f9",
+      "leadId": "69aade6d1a7b0651ce28e991",
+      "leadName": "Harper Walker",
+      "action": "Sent Initial Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 17,
+      "createdAt": "2026-03-02T16:21:10.567Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9fa",
+      "leadId": "69aade6d1a7b0651ce28e991",
+      "leadName": "Harper Walker",
+      "action": "Email Opened",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 348,
+      "createdAt": "2026-03-02T08:36:50.840Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9fb",
+      "leadId": "69aade6d1a7b0651ce28e991",
+      "leadName": "Harper Walker",
+      "action": "Profile Viewed",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 211,
+      "createdAt": "2026-03-04T08:17:31.623Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9fc",
+      "leadId": "69aade6d1a7b0651ce28e991",
+      "leadName": "Harper Walker",
+      "action": "LinkedIn Connection Request",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 503,
+      "createdAt": "2026-03-03T09:27:28.538Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9fd",
+      "leadId": "69aade6d1a7b0651ce28e991",
+      "leadName": "Harper Walker",
+      "action": "Sent Initial Email",
+      "status": "SKIPPED",
+      "detail": "Rate limit reached, will retry later",
+      "latencyMs": 353,
+      "createdAt": "2026-02-28T16:54:49.834Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9fe",
+      "leadId": "69aade6d1a7b0651ce28e992",
+      "leadName": "Rahul Sharma",
+      "action": "Profile Viewed",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 335,
+      "createdAt": "2026-03-05T19:47:56.404Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28e9ff",
+      "leadId": "69aade6d1a7b0651ce28e992",
+      "leadName": "Rahul Sharma",
+      "action": "LinkedIn Connection Request",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 34,
+      "createdAt": "2026-03-06T00:59:50.817Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea00",
+      "leadId": "69aade6d1a7b0651ce28e992",
+      "leadName": "Rahul Sharma",
+      "action": "LinkedIn Connection Request",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 99,
+      "createdAt": "2026-03-01T22:26:51.956Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea01",
+      "leadId": "69aade6d1a7b0651ce28e992",
+      "leadName": "Rahul Sharma",
+      "action": "LinkedIn Connection Request",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 203,
+      "createdAt": "2026-03-01T22:21:14.272Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea02",
+      "leadId": "69aade6d1a7b0651ce28e993",
+      "leadName": "Priya Mehta",
+      "action": "Follow-up Email",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 44,
+      "createdAt": "2026-03-04T16:45:40.885Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea03",
+      "leadId": "69aade6d1a7b0651ce28e993",
+      "leadName": "Priya Mehta",
+      "action": "Profile Viewed",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 124,
+      "createdAt": "2026-03-05T01:14:12.317Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea04",
+      "leadId": "69aade6d1a7b0651ce28e993",
+      "leadName": "Priya Mehta",
+      "action": "Profile Viewed",
+      "status": "OK",
+      "detail": "Processed successfully",
+      "latencyMs": 297,
+      "createdAt": "2026-03-06T01:37:18.540Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea05",
+      "leadId": "69aade6d1a7b0651ce28e993",
+      "leadName": "Priya Mehta",
+      "action": "Profile Viewed",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 398,
+      "createdAt": "2026-03-04T22:30:37.711Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea06",
+      "leadId": "69aade6d1a7b0651ce28e994",
+      "leadName": "James Walker",
+      "action": "Follow-up Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 245,
+      "createdAt": "2026-03-03T11:09:22.053Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea07",
+      "leadId": "69aade6d1a7b0651ce28e994",
+      "leadName": "James Walker",
+      "action": "Profile Viewed",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 226,
+      "createdAt": "2026-02-28T17:26:33.364Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea08",
+      "leadId": "69aade6d1a7b0651ce28e994",
+      "leadName": "James Walker",
+      "action": "Started Workflow Q1 Outbound",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 408,
+      "createdAt": "2026-03-01T14:56:43.632Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea09",
+      "leadId": "69aade6d1a7b0651ce28e995",
+      "leadName": "Sara Kim",
+      "action": "Profile Viewed",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 371,
+      "createdAt": "2026-03-04T02:59:00.995Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea0a",
+      "leadId": "69aade6d1a7b0651ce28e995",
+      "leadName": "Sara Kim",
+      "action": "Sent Initial Email",
+      "status": "PENDING",
+      "detail": "Queued for delivery",
+      "latencyMs": 422,
+      "createdAt": "2026-03-03T01:20:17.680Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea0b",
+      "leadId": "69aade6d1a7b0651ce28e995",
+      "leadName": "Sara Kim",
+      "action": "Follow-up Email",
+      "status": "SENT",
+      "detail": "Processed successfully",
+      "latencyMs": 346,
+      "createdAt": "2026-03-03T07:26:56.049Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea0c",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 86 records",
+      "latencyMs": 125,
+      "createdAt": "2026-03-05T21:09:50.451Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea0d",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 46 records",
+      "latencyMs": 165,
+      "createdAt": "2026-03-05T06:55:04.489Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea0e",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 92 records",
+      "latencyMs": 66,
+      "createdAt": "2026-03-04T09:12:59.747Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea0f",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 16 records",
+      "latencyMs": 86,
+      "createdAt": "2026-03-06T13:05:21.703Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea10",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 64 records",
+      "latencyMs": 205,
+      "createdAt": "2026-03-06T10:39:37.043Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea11",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 23 records",
+      "latencyMs": 68,
+      "createdAt": "2026-03-04T12:03:57.016Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea12",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 26 records",
+      "latencyMs": 176,
+      "createdAt": "2026-03-06T02:52:45.748Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea13",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 66 records",
+      "latencyMs": 225,
+      "createdAt": "2026-03-04T02:17:22.257Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea14",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 44 records",
+      "latencyMs": 127,
+      "createdAt": "2026-03-04T05:27:58.080Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea15",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 42 records",
+      "latencyMs": 178,
+      "createdAt": "2026-03-03T16:04:46.184Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea16",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 66 records",
+      "latencyMs": 66,
+      "createdAt": "2026-03-06T04:46:39.931Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.221Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea17",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 1 records",
+      "latencyMs": 234,
+      "createdAt": "2026-03-03T23:49:57.727Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.222Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea18",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 63 records",
+      "latencyMs": 156,
+      "createdAt": "2026-03-03T14:11:59.335Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.222Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea19",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 65 records",
+      "latencyMs": 185,
+      "createdAt": "2026-03-04T14:09:33.045Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.222Z"
+    },
+    {
+      "_id": "69aade6d1a7b0651ce28ea1a",
+      "leadName": "SYSTEM",
+      "action": "Batch Sync",
+      "status": "OK",
+      "detail": "Synced 87 records",
+      "latencyMs": 152,
+      "createdAt": "2026-03-03T20:28:39.798Z",
+      "__v": 0,
+      "updatedAt": "2026-03-06T14:02:21.222Z"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Icon } from '@iconify/react'
 import { useLeads } from '../hooks/useLeads'
+import { leadsAPI } from '../services/api'
 
 export default function Leads() {
     const [search, setSearch] = useState('')
@@ -8,8 +9,47 @@ export default function Leads() {
     const [workflowFilter, setWorkflowFilter] = useState('ALL')
     const [selectAll, setSelectAll] = useState(false)
     const [selectedIds, setSelectedIds] = useState([])
+    const [page, setPage] = useState(1)
 
-    const { leads, loading, error, pagination } = useLeads()
+    const { leads = [], loading, error, pagination, refetch } = useLeads({
+        search, status: statusFilter, workflow: workflowFilter, page
+    })
+
+    // Reset pagination to 1 when filters change
+    useEffect(() => { setPage(1) }, [search, statusFilter, workflowFilter])
+
+    const handleImport = async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+        try {
+            await leadsAPI.import(file)
+            refetch()
+            alert('Import successful!')
+        } catch (err) {
+            alert('Import failed: ' + (err.error || err.message || err))
+        }
+        e.target.value = null
+    }
+
+    const handleExport = () => {
+        if (!leads.length) return alert('No leads to export')
+        const headers = ['NAME', 'COMPANY', 'ROLE', 'EMAIL', 'STATUS']
+        const rows = leads.map(l => [
+            `"${l.name || ''}"`,
+            `"${l.company || ''}"`,
+            `"${l.position || ''}"`,
+            `"${l.email || ''}"`,
+            `"${l.status || ''}"`
+        ])
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+        const blob = new Blob([csv], { type: 'text/csv' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'leads_export.csv'
+        a.click()
+        window.URL.revokeObjectURL(url)
+    }
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -42,12 +82,13 @@ export default function Leads() {
             <div className="flex justify-between items-center flex-shrink-0">
                 <h2 className="font-syne text-2xl font-bold uppercase tracking-tight text-[var(--text-primary)]">LEADS DATABASE</h2>
                 <div className="flex gap-4">
-                    <button className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
+                    <button onClick={handleExport} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
                         EXPORT
                     </button>
-                    <button className="btn-base btn-accent">
+                    <label className="btn-base btn-accent cursor-pointer flex items-center justify-center m-0">
                         IMPORT CSV
-                    </button>
+                        <input type="file" className="hidden" accept=".csv,.xlsx" onChange={handleImport} />
+                    </label>
                 </div>
             </div>
 
@@ -70,9 +111,9 @@ export default function Leads() {
                         onChange={(e) => setStatusFilter(e.target.value)}
                     >
                         <option value="ALL">STATUS: ALL</option>
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="PENDING">PENDING</option>
-                        <option value="COLD">COLD</option>
+                        <option value="Contacted">ACTIVE</option>
+                        <option value="New">PENDING</option>
+                        <option value="Converted">COLD</option>
                     </select>
                     <Icon icon="solar:alt-arrow-down-linear" className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]" />
                 </div>
@@ -141,11 +182,11 @@ export default function Leads() {
                                     <td className={`p-[12px_16px] ${lead.workflow ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>{lead.workflow || '—'}</td>
                                     <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.lastAction || 'No Actions Yet'}</td>
                                     <td className="p-[12px_16px] flex gap-2 justify-center">
-                                        <button className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
+                                        <button onClick={() => alert('Starting workflow for ' + lead.name)} className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
                                             <Icon icon="solar:play-bold" />
                                         </button>
-                                        <button className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
-                                            <Icon icon="solar:menu-dots-bold" />
+                                        <button onClick={() => confirm('Delete lead ' + lead.name + '?') && leadsAPI.remove(lead._id).then(refetch)} className="w-[30px] h-[30px] page-btn bg-[var(--bg-raised)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:-translate-y-[1px]">
+                                            <Icon icon="solar:trash-bin-trash-bold" />
                                         </button>
                                     </td>
                                 </tr>
@@ -161,13 +202,11 @@ export default function Leads() {
                     SHOWING {(pagination?.page - 1) * pagination?.limit + 1 || 0}–{Math.min((pagination?.page) * pagination?.limit, pagination?.total || 0) || 0} OF {pagination?.total || 0} LEADS
                 </span>
                 <div className="flex gap-2">
-                    <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px]">‹</button>
-                    <button className="h-[32px] w-[32px] page-btn active flex items-center justify-center transition-transform hover:-translate-y-[1px]">1</button>
-                    <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px]">2</button>
-                    <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px]">3</button>
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] disabled:opacity-50">‹</button>
+                    <button className="h-[32px] w-[32px] page-btn active flex items-center justify-center transition-transform hover:-translate-y-[1px]">{page}</button>
                     <span className="text-[var(--text-muted)] font-bold flex items-center justify-center px-2">...</span>
-                    <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px]">50</button>
-                    <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px]">›</button>
+                    <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] cursor-default">{pagination?.pages || 1}</button>
+                    <button onClick={() => setPage(p => Math.min(pagination?.pages || 1, p + 1))} disabled={!pagination?.pages || page >= pagination.pages} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] disabled:opacity-50">›</button>
                 </div>
             </div>
         </div>
