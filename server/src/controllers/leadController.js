@@ -5,11 +5,15 @@ import * as XLSX from 'xlsx'
 // GET /api/leads
 export const getLeads = async (req, res, next) => {
     try {
-        const { page = 1, limit = 25, status, search } = req.query
+        const { page = 1, limit = 25, status, search, workflow } = req.query
         const filter = {}
 
         if (status && status !== 'ALL') {
             filter.status = status
+        }
+
+        if (workflow && workflow !== 'ALL') {
+            filter.workflow = workflow
         }
 
         if (search) {
@@ -17,7 +21,8 @@ export const getLeads = async (req, res, next) => {
             filter.$or = [
                 { name: regex },
                 { email: regex },
-                { company: regex }
+                { company: regex },
+                { position: regex }
             ]
         }
 

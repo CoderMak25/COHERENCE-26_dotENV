@@ -33,7 +33,8 @@ const leadSchema = new mongoose.Schema({
         ],
         default: 'New'
     },
-
+    workflow: { type: String, default: null },
+    lastAction: { type: String, default: null },
     workflowId: { type: mongoose.Schema.Types.ObjectId, ref: 'Workflow' },
     currentStep: { type: Number, default: 0 },
 
