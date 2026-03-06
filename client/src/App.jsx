@@ -7,6 +7,7 @@ import Leads from './pages/Leads'
 import Campaigns from './pages/Campaigns'
 import Analytics from './pages/Analytics'
 import Logs from './pages/Logs'
+import WorkflowBuilder from './pages/workflow/WorkflowBuilder'
 import Settings from './pages/Settings'
 import Profile from './pages/Profile'
 
@@ -23,6 +24,7 @@ export default function App() {
                                 <Route path="/" element={<Dashboard />} />
                                 <Route path="/leads" element={<Leads />} />
                                 <Route path="/campaigns" element={<Campaigns />} />
+                                <Route path="/workflows" element={<WorkflowBuilder />} />
                                 <Route path="/analytics" element={<Analytics />} />
                                 <Route path="/logs" element={<Logs />} />
                                 <Route path="/settings" element={<Settings />} />
