@@ -1,9 +1,18 @@
 import Workflow from '../models/Workflow.js'
 import { outreachQueue } from '../queues/outreachQueue.js'
-import { runOutreachWorkflowSSE } from '../services/executionEngine.js'
+import { runWorkflowGraphSSE } from '../services/executionEngine.js'
 
-// GET /api/workflows/run — SSE streaming endpoint for real-time execution
+// POST /api/workflows/run — SSE streaming, graph-driven execution
 export const runWorkflow = async (req, res, next) => {
+    // Parse workflow graph from request body
+    const workflow = req.body?.workflow
+
+    if (!workflow || !workflow.nodes || !workflow.nodes.length) {
+        return res.status(400).json({ error: 'No workflow graph provided. Send { workflow: { nodes, edges } }' })
+    }
+
+    if (!workflow.edges) workflow.edges = []
+
     // Set up SSE headers
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -21,7 +30,7 @@ export const runWorkflow = async (req, res, next) => {
     req.on('close', () => { aborted = true })
 
     try {
-        await runOutreachWorkflowSSE(send, () => aborted)
+        await runWorkflowGraphSSE(workflow, send, () => aborted)
         send('done', { message: 'Workflow complete' })
     } catch (err) {
         send('error', { message: err.message })

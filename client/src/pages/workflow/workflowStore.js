@@ -85,7 +85,7 @@ const useWorkflowStore = create((set, get) => ({
     activeNodeId: null,
     logs: [],
     showLog: true,
-    _eventSource: null,
+    _abortController: null,
 
     // ── History ──
     history: [],
@@ -381,51 +381,98 @@ const useWorkflowStore = create((set, get) => ({
         set({ running: false, activeNodeId: null })
     },
 
-    // ── Run Backend Workflow (SSE real-time streaming) ──
-    runBackendWorkflow: () => {
+    // ── Run Backend Workflow (POST + SSE streaming) ──
+    runBackendWorkflow: async () => {
         if (get().running) return // guard: execute only once
 
         set({ running: true, logs: [], showLog: true, runCount: get().runCount + 1 })
 
         const time = () => new Date().toLocaleTimeString('en-US', { hour12: false })
-        get().appendLog({ time: time(), tag: 'SYS', message: 'Connecting to backend...' })
+        get().appendLog({ time: time(), tag: 'SYS', message: 'Sending workflow graph to backend...' })
 
-        const es = new EventSource('http://localhost:5000/api/workflows/run')
-        set({ _eventSource: es })
-
-        es.addEventListener('log', (e) => {
-            const data = JSON.parse(e.data)
-            get().appendLog({ time: time(), tag: data.tag || '--', message: data.message })
-        })
-
-        es.addEventListener('progress', (e) => {
-            // Progress events available for future use (progress bar, etc.)
-        })
-
-        es.addEventListener('done', (e) => {
-            es.close()
-            set({ running: false, _eventSource: null })
-        })
-
-        es.addEventListener('error', (e) => {
-            // SSE error — either server closed or network error
-            es.close()
-            if (get().running) {
-                get().appendLog({ time: time(), tag: 'SYS', message: 'Connection closed' })
+        // Build workflow payload from canvas nodes/edges
+        const { nodes, edges } = get()
+        const payload = {
+            workflow: {
+                nodes: nodes.map(n => ({
+                    id: n.id,
+                    type: n.data?.nodeType || n.type,
+                    config: n.data?.config || {},
+                    enabled: n.data?.enabled !== false,
+                })),
+                edges: edges.map(e => ({
+                    id: e.id,
+                    from: e.source,
+                    to: e.target,
+                    fromPort: e.sourceHandle || '0',
+                })),
             }
-            set({ running: false, _eventSource: null })
-        })
+        }
+
+        const controller = new AbortController()
+        set({ _abortController: controller })
+
+        try {
+            const res = await fetch('http://localhost:5000/api/workflows/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+            })
+
+            const reader = res.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+
+                // Parse SSE events from buffer
+                const lines = buffer.split('\n')
+                buffer = lines.pop() // keep incomplete line in buffer
+
+                let eventType = null
+                for (const line of lines) {
+                    if (line.startsWith('event: ')) {
+                        eventType = line.slice(7).trim()
+                    } else if (line.startsWith('data: ') && eventType) {
+                        try {
+                            const data = JSON.parse(line.slice(6))
+                            if (eventType === 'log') {
+                                get().appendLog({ time: time(), tag: data.tag || '--', message: data.message })
+                            } else if (eventType === 'done') {
+                                // Workflow complete
+                            } else if (eventType === 'error') {
+                                get().appendLog({ time: time(), tag: 'ERR', message: data.message })
+                            }
+                        } catch { }
+                        eventType = null
+                    } else if (line === '') {
+                        eventType = null
+                    }
+                }
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                get().appendLog({ time: time(), tag: 'ERR', message: `Backend error: ${err.message}` })
+            }
+        }
+
+        set({ running: false, _abortController: null })
     },
 
     // ── Stop execution ──
     stopWorkflow: () => {
-        const es = get()._eventSource
-        if (es) {
-            es.close()
+        const controller = get()._abortController
+        if (controller) {
+            controller.abort()
             const time = () => new Date().toLocaleTimeString('en-US', { hour12: false })
             get().appendLog({ time: time(), tag: 'SYS', message: 'Execution stopped by user' })
         }
-        set({ running: false, _eventSource: null })
+        set({ running: false, _abortController: null })
     },
 }))
 
