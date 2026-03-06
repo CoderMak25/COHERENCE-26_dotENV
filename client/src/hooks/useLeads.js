@@ -10,10 +10,19 @@ export const useLeads = (params = {}) => {
     const fetchLeads = useCallback(async () => {
         try {
             setLoading(true)
-            const res = await leadsAPI.getAll(params)
-            setLeads(res.data)
-            setPagination(res.pagination)
+            setError(null)
+            // Strip empty/null/undefined and 'ALL' values so they don't confuse the backend
+            const cleanParams = {}
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '' && value !== 'ALL') {
+                    cleanParams[key] = value
+                }
+            })
+            const res = await leadsAPI.getAll(cleanParams)
+            setLeads(res.data || [])
+            setPagination(res.pagination || {})
         } catch (err) {
+            console.error('useLeads fetch error:', err)
             setError(err)
         } finally {
             setLoading(false)

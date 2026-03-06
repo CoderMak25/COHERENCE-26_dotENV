@@ -1,15 +1,48 @@
-import { useState } from 'react'
-import { MOCK_LOGS } from '../data/mockData'
+import { useState, useEffect } from 'react'
+import { useLogs } from '../hooks/useLogs'
 
 export default function Logs() {
     const [activeFilter, setActiveFilter] = useState('ALL')
-    const [startDate, setStartDate] = useState('2023-10-24')
-    const [endDate, setEndDate] = useState('2023-10-25')
+    const [startDate, setStartDate] = useState('')
+    const [endDate, setEndDate] = useState('')
     const [searchText, setSearchText] = useState('')
     const [autoRefresh, setAutoRefresh] = useState(true)
+    const [page, setPage] = useState(1)
 
     const filters = ['ALL', 'SENT', 'FAILED', 'PENDING', 'SKIPPED']
-    const logs = MOCK_LOGS
+
+    const { logs = [], loading, error, pagination, refetch } = useLogs({
+        status: activeFilter, startDate, endDate, search: searchText, page
+    })
+
+    useEffect(() => { setPage(1) }, [activeFilter, startDate, endDate, searchText])
+
+    useEffect(() => {
+        if (!autoRefresh) return
+        const interval = setInterval(() => refetch(), 10000)
+        return () => clearInterval(interval)
+    }, [autoRefresh, refetch])
+
+    const handleExport = () => {
+        if (!logs.length) return alert('No logs to export')
+        const headers = ['TIMESTAMP', 'LEAD', 'ACTION', 'STATUS', 'DETAIL', 'LATENCY']
+        const rows = logs.map(l => [
+            `"${new Date(l.createdAt).toLocaleString()}"`,
+            `"${l.leadName || ''}"`,
+            `"${l.action || ''}"`,
+            `"${l.status || ''}"`,
+            `"${l.detail || ''}"`,
+            `"${l.latencyMs || ''}"`
+        ])
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+        const blob = new Blob([csv], { type: 'text/csv' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'logs_export.csv'
+        a.click()
+        window.URL.revokeObjectURL(url)
+    }
 
     const getRowBg = (status, index) => {
         if (status === 'FAILED') return 'bg-[rgba(212,43,43,0.04)]'
@@ -53,7 +86,7 @@ export default function Logs() {
                             ></div>
                         </div>
                     </div>
-                    <button className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
+                    <button onClick={handleExport} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
                         EXPORT
                     </button>
                 </div>
@@ -102,19 +135,21 @@ export default function Logs() {
             <div className="flex gap-4 mb-5 flex-shrink-0">
                 <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col">
                     <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">TOTAL LOGS</span>
-                    <span className="font-syne text-2xl font-bold text-[var(--text-primary)] leading-none">8,492</span>
+                    <span className="font-syne text-2xl font-bold text-[var(--text-primary)] leading-none">{pagination?.total || 0}</span>
                 </div>
                 <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col">
-                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">SENT TODAY</span>
-                    <span className="font-syne text-2xl font-bold text-[var(--success)] leading-none">612</span>
+                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">PAGE LIMIT</span>
+                    <span className="font-syne text-2xl font-bold text-[var(--success)] leading-none">{pagination?.limit || 50}</span>
                 </div>
                 <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col">
-                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">FAILED</span>
-                    <span className="font-syne text-2xl font-bold text-[var(--danger)] leading-none">14</span>
+                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">CURRENT PAGE</span>
+                    <span className="font-syne text-2xl font-bold text-[var(--text-primary)] leading-none">{page}</span>
                 </div>
-                <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col">
-                    <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest mb-2">PENDING</span>
-                    <span className="font-syne text-2xl font-bold text-[var(--warning)] leading-none">23</span>
+                <div className="brutalist-card p-[16px_20px] flex-1 flex flex-col items-center justify-center">
+                    <div className="flex gap-2">
+                        <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] disabled:opacity-50">‹</button>
+                        <button onClick={() => setPage(p => Math.min(pagination?.pages || 1, p + 1))} disabled={!pagination?.pages || page >= pagination.pages} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] disabled:opacity-50">›</button>
+                    </div>
                 </div>
             </div>
 
@@ -132,13 +167,28 @@ export default function Logs() {
                         </tr>
                     </thead>
                     <tbody className="text-[11px] font-bold">
-                        {logs.map((log, index) => {
+                        {error && (
+                            <tr>
+                                <td colSpan="6" className="p-[20px] text-center text-[var(--danger)]">Error loading logs: {error.message || String(error)}</td>
+                            </tr>
+                        )}
+                        {!error && loading && (
+                            <tr>
+                                <td colSpan="6" className="p-[20px] text-center text-[var(--text-muted)]">Loading logs...</td>
+                            </tr>
+                        )}
+                        {!error && !loading && logs.length === 0 && (
+                            <tr>
+                                <td colSpan="6" className="p-[20px] text-center text-[var(--text-muted)]">No logs found.</td>
+                            </tr>
+                        )}
+                        {!error && !loading && logs.map((log, index) => {
                             const failed = log.status === 'FAILED'
                             const textClass = failed ? 'text-[var(--danger)]' : ''
                             return (
                                 <tr key={log._id} className={`h-[44px] hover:bg-[var(--bg-hover)] ${getRowBg(log.status, index)}`}>
-                                    <td className={`p-[0_16px] ${failed ? 'text-[var(--danger)]' : 'text-[var(--text-muted)]'}`}>{log.timestamp}</td>
-                                    <td className={`p-[0_16px] ${failed ? 'text-[var(--danger)]' : 'text-[var(--text-primary)]'}`}>{log.leadName}</td>
+                                    <td className={`p-[0_16px] ${failed ? 'text-[var(--danger)]' : 'text-[var(--text-muted)]'}`}>{new Date(log.createdAt).toLocaleString()}</td>
+                                    <td className={`p-[0_16px] ${failed ? 'text-[var(--danger)]' : 'text-[var(--text-primary)]'}`}>{log.leadName || 'SYSTEM'}</td>
                                     <td className={`p-[0_16px] ${failed ? 'text-[var(--danger)]' : 'text-[var(--text-secondary)]'}`}>{log.action}</td>
                                     <td className="p-[0_16px]"><span className={`badge ${getBadgeClass(log.status)}`}>{log.status}</span></td>
                                     <td className={`p-[0_16px] ${failed ? 'text-[var(--danger)]' : 'text-[var(--text-secondary)]'}`}>{log.detail}</td>
@@ -154,13 +204,13 @@ export default function Logs() {
             <div className="h-[36px] mt-4 bg-[var(--bg-topbar)] border-t-2 border-[var(--border-bright)] flex items-center justify-between px-5 flex-shrink-0">
                 <div className="flex items-center gap-2">
                     <span className="text-[var(--success)] text-[8px] status-dot">●</span>
-                    <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">RUNNING — 12 ACTIVE JOBS</span>
+                    <span className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">LIVE CONNECTION ENABLED</span>
                 </div>
                 <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
-                    8,492 TOTAL LOGS // 234 TODAY
+                    {pagination?.total || 0} TOTAL LOGS
                 </div>
                 <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-widest flex items-center gap-1">
-                    LAST SYNC: 09:42:33 <span className="animate-blink text-[var(--text-primary)]">▮</span>
+                    LAST SYNC: {new Date().toLocaleTimeString()} <span className="animate-blink text-[var(--text-primary)]">▮</span>
                 </div>
             </div>
         </div>
