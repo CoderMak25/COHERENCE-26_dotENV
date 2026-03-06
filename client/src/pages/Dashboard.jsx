@@ -75,11 +75,13 @@ export default function Dashboard() {
     const maxChart = Math.max(...chartData.map(d => d.value), 1)
     const topLeads = stats?.topLeads || []
     const workflowCounts = stats?.workflowCounts || []
+    const scoring = stats?.scoring || { hot: 0, warm: 0, cold: 0, avgScore: 0 }
 
-    // Prepare chart arrays for weekly activity section
-    const dayLabels = chartData.map(d => d.label || '')
-    const barValues = chartData.map(d => d.value || 0)
-    const barHeights = barValues.map(v => `${Math.round((v / maxChart) * 100)}%`)
+    const getScoreColor = (score) => {
+        if (score >= 80) return 'var(--danger)'
+        if (score >= 50) return 'var(--warning, #d4a72c)'
+        return 'var(--text-muted)'
+    }
 
     const statCards = [
         { label: 'TOTAL LEADS', value: totalLeads.toLocaleString(), icon: 'solar:users-group-two-rounded-linear', trend: `${p.new || 0} NEW`, trendUp: true, bottom: `${p.contacted || 0} CONTACTED`, link: '/app/leads' },
@@ -170,6 +172,20 @@ export default function Dashboard() {
                 </div>
             </div>
 
+            {/* LEAD SCORING STRIP */}
+            <div className="flex gap-4 mb-6">
+                <div className="brutalist-card p-4 flex-1 flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">SCORING</span>
+                    <span className="text-[var(--border-bright)]">|</span>
+                    <span className="text-[11px] font-bold" style={{ color: 'var(--danger)' }}>● HOT {scoring.hot}</span>
+                    <span className="text-[11px] font-bold" style={{ color: 'var(--warning, #d4a72c)' }}>● WARM {scoring.warm}</span>
+                    <span className="text-[11px] font-bold text-[var(--text-muted)]">● COLD {scoring.cold}</span>
+                    <span className="text-[var(--border-bright)] ml-auto">|</span>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">AVG SCORE</span>
+                    <span className="font-syne text-lg font-bold text-[var(--text-primary)] leading-none">{scoring.avgScore}</span>
+                </div>
+            </div>
+
             {/* 4️⃣ WEEKLY ACTIVITY + LIVE FEED */}
             <div className="flex gap-4 h-[300px] mb-6">
                 {/* LEFT: ACTIVITY CHART */}
@@ -196,19 +212,21 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-1 relative border-l-2 border-[var(--border-bright)] border-b-2 pb-6 pl-2 flex items-end gap-1.5" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 19%, var(--border) 20%)' }}>
                         <div className="absolute -left-8 bottom-0 text-[10px] font-bold text-[var(--text-muted)]">0</div>
-                        <div className="absolute -left-9 top-[80%] text-[10px] font-bold text-[var(--text-muted)]">50</div>
-                        <div className="absolute -left-9 top-[40%] text-[10px] font-bold text-[var(--text-muted)]">150</div>
-                        <div className="absolute -left-9 top-0 text-[10px] font-bold text-[var(--text-muted)]">200</div>
-                        {dayLabels.map((day, i) => (
-                            <div
-                                key={day}
-                                className={`flex-1 ${i === 3 || i === 5 || i === 6 ? 'bg-[var(--border)]' : 'bg-accent'} border-2 border-[var(--border-bright)] hover:-translate-y-1 transition-transform relative group`}
-                                style={{ height: barHeights[i] }}
-                            >
-                                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[var(--text-muted)]">{day}</span>
-                                <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] px-3 py-1 text-[10px] font-bold text-[var(--text-primary)] z-10">{barValues[i]}</div>
-                            </div>
-                        ))}
+                        <div className="absolute -left-9 top-[50%] text-[10px] font-bold text-[var(--text-muted)]">{Math.round(maxChart / 2)}</div>
+                        <div className="absolute -left-9 top-0 text-[10px] font-bold text-[var(--text-muted)]">{maxChart}</div>
+                        {chartData.map((day, i) => {
+                            const heightPct = maxChart > 0 ? (day.value / maxChart) * 100 : 0
+                            return (
+                                <div
+                                    key={day.name}
+                                    className={`flex-1 ${day.value === 0 ? 'bg-[var(--border)]' : 'bg-accent'} border-2 border-[var(--border-bright)] hover:-translate-y-1 transition-transform relative group`}
+                                    style={{ height: `${Math.max(heightPct, 3)}%` }}
+                                >
+                                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[var(--text-muted)]">{day.name}</span>
+                                    <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[var(--bg-surface)] border-2 border-[var(--border-bright)] shadow-[2px_2px_0_var(--shadow-color)] px-3 py-1 text-[10px] font-bold text-[var(--text-primary)] z-10 whitespace-nowrap">{day.value}</div>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
 
@@ -263,7 +281,7 @@ export default function Dashboard() {
                         <div className="brutalist-card p-4 min-w-[280px] text-center text-[11px] text-[var(--text-muted)] font-bold">No active workflows</div>
                     )}
                     {workflowCounts.map((wf) => (
-                        <div key={wf._id} onClick={() => navigate('/workflows')} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3 cursor-pointer hover:-translate-y-[2px] transition-transform">
+                        <div key={wf._id} onClick={() => navigate('/app/workflows')} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3 cursor-pointer hover:-translate-y-[2px] transition-transform">
                             <div className="flex justify-between items-start">
                                 <span className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest">{wf._id}</span>
                                 <span className="badge badge-success">ACTIVE</span>
@@ -274,7 +292,7 @@ export default function Dashboard() {
                             <div className="flex gap-4 text-[10px] font-bold tracking-widest">
                                 <span className="text-[var(--text-muted)]">LEADS: <span className="text-[var(--text-primary)]">{wf.count}</span></span>
                             </div>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/workflows') }} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] w-full">
+                            <button onClick={(e) => { e.stopPropagation(); navigate('/app/workflows') }} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] w-full">
                                 VIEW WORKFLOW
                             </button>
                         </div>
@@ -292,6 +310,7 @@ export default function Dashboard() {
                     <thead className="bg-[var(--bg-raised)]">
                         <tr>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">LEAD</th>
+                            <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">SCORE</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">STATUS</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">WORKFLOW</th>
                             <th className="p-[12px_16px] text-[10px] uppercase text-[var(--text-muted)] tracking-widest font-bold">LAST ACTION</th>
@@ -304,6 +323,10 @@ export default function Dashboard() {
                                 <td className="p-[12px_16px]">
                                     <span className="text-[var(--text-primary)]">{lead.name}</span>
                                     <span className="text-[var(--text-muted)] ml-2">@ {lead.company || '—'}</span>
+                                </td>
+                                <td className="p-[12px_16px]">
+                                    <span className="text-[11px] font-bold" style={{ color: getScoreColor(lead.score || 0) }}>{lead.score || 0}</span>
+                                    <span className="text-[9px] font-bold ml-1" style={{ color: getScoreColor(lead.score || 0) }}>{lead.scoreLabel || 'COLD'}</span>
                                 </td>
                                 <td className="p-[12px_16px]"><span className={`badge ${getStatusBadge(lead.status)}`}>{(lead.status || 'NEW').toUpperCase()}</span></td>
                                 <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.workflow || '—'}</td>

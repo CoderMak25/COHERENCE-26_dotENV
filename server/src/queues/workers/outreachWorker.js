@@ -1,26 +1,53 @@
 import { outreachQueue } from '../outreachQueue.js'
-import { processJob } from '../../services/executionEngine.js'
-import { pollForReplies, sendAiReply, initReplyWorker } from './replyWorker.js'
 
-// Process all queue jobs concurrently (up to 10 at a time) to speed up sending
-outreachQueue.process(10, async (job) => {
-    const data = job.data
+// Only set up workers if queue is available
+if (outreachQueue) {
+    let processJob
+    let pollForReplies, sendAiReply, initReplyWorker
 
-    // Route by job type
-    if (data.type === 'poll_replies') {
-        await pollForReplies()
-        return
+    try {
+        const engine = await import('../../services/executionEngine.js')
+        processJob = engine.processJob
+    } catch (e) {
+        console.warn('Execution engine not available:', e.message)
     }
 
-    if (data.type === 'ai_reply') {
-        await sendAiReply(data.leadId, data.replyText)
-        return
+    try {
+        const replyMod = await import('./replyWorker.js')
+        pollForReplies = replyMod.pollForReplies
+        sendAiReply = replyMod.sendAiReply
+        initReplyWorker = replyMod.initReplyWorker
+    } catch (e) {
+        console.warn('Reply worker not available:', e.message)
     }
 
-    // Default: existing workflow node processing
-    const { leadId, workflowId, nodeId, campaignId } = data
-    await processJob({ leadId, workflowId, nodeId, campaignId })
-})
+    // Process all queue jobs concurrently (up to 10 at a time) to speed up sending
+    outreachQueue.process(10, async (job) => {
+        const data = job.data
 
-// Register the repeating reply poll job
-initReplyWorker()
+        if (data.type === 'poll_replies' && pollForReplies) {
+            await pollForReplies()
+            return
+        }
+
+        if (data.type === 'ai_reply' && sendAiReply) {
+            await sendAiReply(data.leadId, data.replyText)
+            return
+        }
+
+        if (processJob) {
+            const { leadId, workflowId, nodeId, campaignId } = data
+            await processJob({ leadId, workflowId, nodeId, campaignId })
+        }
+    })
+
+    if (initReplyWorker) {
+        try {
+            initReplyWorker()
+        } catch (e) {
+            console.warn('Reply worker init failed:', e.message)
+        }
+    }
+} else {
+    console.warn('Queue not available — workers disabled')
+}

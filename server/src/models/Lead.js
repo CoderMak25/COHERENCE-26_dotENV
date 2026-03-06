@@ -53,11 +53,17 @@ const leadSchema = new mongoose.Schema({
     lastRepliedAt: { type: Date, default: null },
     lastContact: { type: Date },
 
+    // Lead Scoring
+    score: { type: Number, default: 0, min: 0, max: 100 },
+    scoreLabel: { type: String, enum: ['HOT', 'WARM', 'COLD'], default: 'COLD' },
+    engagementHistory: [{ type: { type: String }, time: { type: Date, default: Date.now } }],
+
     metadata: { type: Map, of: String },
 }, { timestamps: true })
 
 leadSchema.index({ status: 1 })
 leadSchema.index({ company: 1 })
 leadSchema.index({ contactStatus: 1 })
+leadSchema.index({ score: -1 })
 
 export default mongoose.model('Lead', leadSchema)

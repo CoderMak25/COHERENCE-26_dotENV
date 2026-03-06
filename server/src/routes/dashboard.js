@@ -45,7 +45,7 @@ router.get('/stats', async (req, res) => {
 
         // --- Top 5 recent leads with activity ---
         const topLeads = await Lead.find()
-            .sort({ updatedAt: -1 })
+            .sort({ score: -1, updatedAt: -1 })
             .limit(5)
             .lean()
 
@@ -61,6 +61,20 @@ router.get('/stats', async (req, res) => {
             { $group: { _id: '$workflow', count: { $sum: 1 } } }
         ])
 
+        // --- Lead scoring stats ---
+        const scoringAgg = await Lead.aggregate([
+            {
+                $group: {
+                    _id: null,
+                    avgScore: { $avg: '$score' },
+                    hot: { $sum: { $cond: [{ $gte: ['$score', 80] }, 1, 0] } },
+                    warm: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 50] }, { $lt: ['$score', 80] }] }, 1, 0] } },
+                    cold: { $sum: { $cond: [{ $lt: ['$score', 50] }, 1, 0] } },
+                }
+            }
+        ])
+        const scoring = scoringAgg[0] || { avgScore: 0, hot: 0, warm: 0, cold: 0 }
+
         res.json({
             totalLeads,
             statusMap,
@@ -70,6 +84,12 @@ router.get('/stats', async (req, res) => {
             topLeads,
             recentLogs,
             workflowCounts,
+            scoring: {
+                hot: scoring.hot,
+                warm: scoring.warm,
+                cold: scoring.cold,
+                avgScore: Math.round(scoring.avgScore || 0)
+            },
             pipeline: {
                 total: totalLeads,
                 contacted: statusMap['Contacted'] || 0,

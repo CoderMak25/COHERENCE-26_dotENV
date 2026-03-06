@@ -7,8 +7,9 @@ export default function FloatingToolbar() {
         undo, history,
         saveWorkflowToDB, saveWorkflowJSON, loadWorkflow,
         toggleLog, showLog,
-        running, runSimulation, executeOnLeads, stopWorkflow,
+        running, runBackendWorkflow, stopWorkflow, runSimulation, executeOnLeads,
         nodes, saving, dirty, assignedLeads, workflowId,
+        toggleLeadSelector, showLeadSelector, selectedLeadIds,
     } = useWorkflowStore()
 
     const handleClear = () => {
@@ -71,6 +72,14 @@ export default function FloatingToolbar() {
             <button className={`wf-tb-btn ${showLog ? 'wf-tb-active' : ''}`} title="Toggle Log" onClick={toggleLog}>◫</button>
             <button className="wf-tb-btn wf-tb-danger" title="Clear Canvas" onClick={handleClear}>✕</button>
             <div className="wf-tb-sep" />
+            {/* Lead selector toggle */}
+            <button
+                className={`wf-tb-btn ${showLeadSelector ? 'wf-tb-active' : ''}`}
+                title="Select Leads"
+                onClick={toggleLeadSelector}
+            >
+                👥{selectedLeadIds.length > 0 && <span className="wf-tb-badge">{selectedLeadIds.length}</span>}
+            </button>
             {running ? (
                 <button
                     className="wf-tb-run wf-running"
