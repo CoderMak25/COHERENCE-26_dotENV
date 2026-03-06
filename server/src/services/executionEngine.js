@@ -42,17 +42,16 @@ function buildGraph(nodes, edges) {
             type: node.type,
             config: node.config || {},
             enabled: node.enabled !== false,
-            next: {},   // portIndex → targetNodeId
+            next: [],   // ordered list of target node IDs
         }
     }
 
     for (const edge of edges) {
         const fromId = edge.from
         const toId = edge.to
-        const port = String(edge.fromPort || '0')
 
-        if (graph[fromId]) {
-            graph[fromId].next[port] = toId
+        if (graph[fromId] && !graph[fromId].next.includes(toId)) {
+            graph[fromId].next.push(toId)
         }
     }
 
@@ -81,55 +80,63 @@ function findTriggerNode(graph) {
 //  MAIN SSE ENTRY POINT — traverses graph for every lead
 // ═══════════════════════════════════════════════════════════════════
 
-export const runWorkflowGraphSSE = async (workflow, send, isAborted) => {
+export const runWorkflowGraphSSE = async (workflow, send, isAborted, leadIds) => {
     const { nodes, edges } = workflow
+
+    // Wrap SSE send in try/catch to survive client disconnect
+    const safeSend = (event, data) => {
+        try { send(event, data) } catch { }
+    }
 
     // Build graph
     const graph = buildGraph(nodes, edges)
     const trigger = findTriggerNode(graph)
 
     if (!trigger) {
-        send('log', { tag: 'ERR', message: 'No trigger node found in workflow' })
+        safeSend('log', { tag: 'ERR', message: 'No trigger node found in workflow' })
         return
     }
 
-    send('log', { tag: 'SYS', message: `Graph built: ${nodes.length} nodes, ${edges.length} edges` })
+    safeSend('log', { tag: 'SYS', message: `Graph built: ${nodes.length} nodes, ${edges.length} edges` })
 
-    // Fetch leads
-    const leads = await Lead.find({})
-    send('log', { tag: 'TRG', message: `Trigger fired — found ${leads.length} leads in database` })
+    // Fetch leads — filter by selected IDs if provided
+    const query = leadIds && leadIds.length > 0 ? { _id: { $in: leadIds } } : {}
+    const leads = await Lead.find(query)
+
+    safeSend('log', { tag: 'TRG', message: `Trigger fired — found ${leads.length} leads in database` })
 
     let sent = 0, failed = 0, skipped = 0
 
     for (let i = 0; i < leads.length; i++) {
+
         if (isAborted()) {
-            send('log', { tag: 'SYS', message: `Stopped by user after ${sent} emails sent` })
+            safeSend('log', { tag: 'SYS', message: `Stopped by user after ${sent} emails sent` })
             break
         }
 
         const lead = leads[i]
-        send('log', { tag: 'SYS', message: `── Lead ${i + 1}/${leads.length}: ${lead.name} ──` })
+        safeSend('log', { tag: 'SYS', message: `── Lead ${i + 1}/${leads.length}: ${lead.name} ──` })
 
         try {
-            const result = await executeForLead(trigger.id, graph, lead, send, isAborted)
+            const result = await executeForLead(trigger.id, graph, lead, safeSend, isAborted)
 
             if (result.emailSent) sent++
             else if (result.failed) failed++
             else skipped++
 
-            send('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
+            safeSend('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
 
             // Delay between leads (1-2 seconds)
             await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000))
 
         } catch (err) {
             failed++
-            send('log', { tag: 'ERR', message: `Error for ${lead.name}: ${err.message}` })
-            send('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
+            safeSend('log', { tag: 'ERR', message: `Error for ${lead.name}: ${err.message}` })
+            safeSend('progress', { sent, failed, skipped, current: i + 1, total: leads.length })
         }
     }
 
-    send('log', { tag: 'END', message: `Complete — ${sent} emails sent, ${failed} failed, ${skipped} skipped` })
+    safeSend('log', { tag: 'END', message: `Complete — ${sent} emails sent, ${failed} failed, ${skipped} skipped` })
 }
 
 
@@ -165,10 +172,10 @@ async function executeForLead(startNodeId, graph, lead, send, isAborted) {
         }
         visited.add(currentId)
 
-        // Skip disabled nodes — follow port 0
+        // Skip disabled nodes — follow first connection
         if (!node.enabled) {
             send('log', { tag: '--', message: `Skipped ${node.type} (disabled)` })
-            currentId = node.next['0'] || node.next['out'] || null
+            currentId = node.next[0] || null
             continue
         }
 
@@ -178,14 +185,9 @@ async function executeForLead(startNodeId, graph, lead, send, isAborted) {
         // Stop if node says stop (end node, error, bounce)
         if (result.stop) break
 
-        // Follow the correct output port
-        const nextPort = String(result.port ?? '0')
-        currentId = node.next[nextPort] || node.next['out'] || node.next['0'] || null
-
-        // If no next on that port, try default
-        if (!currentId && nextPort !== '0') {
-            currentId = node.next['0'] || null
-        }
+        // Follow the correct output port (port index into next[] array)
+        const portIdx = parseInt(result.port ?? 0)
+        currentId = node.next[portIdx] || node.next[0] || null
     }
 
     return ctx
@@ -254,14 +256,8 @@ async function handleTrigger(node, ctx, send) {
     const lead = ctx.lead
     const channel = validateAndRoute(lead)
 
-    await Lead.updateOne({ _id: lead._id }, { $set: { channel } })
-
-    if (channel === 'none') {
-        send('log', { tag: 'TRG', message: `${lead.name} — no contact info, skipped` })
-        return { stop: true, reason: 'no_contact' }
-    }
-
-    send('log', { tag: 'TRG', message: `${lead.name} — channel: ${channel}` })
+    // Just log the channel, never block — individual send nodes handle missing contact
+    send('log', { tag: 'TRG', message: `${lead.name} — channel: ${channel || 'manual'}` })
     return { port: 0 }
 }
 

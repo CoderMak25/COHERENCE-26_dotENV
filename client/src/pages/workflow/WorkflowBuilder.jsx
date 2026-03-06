@@ -19,6 +19,7 @@ import FloatingToolbar from './FloatingToolbar'
 import NodeSearchPicker from './NodeSearchPicker'
 import ConfigPanel from './ConfigPanel'
 import ExecutionLog from './ExecutionLog'
+import LeadSelector from './LeadSelector'
 import StatusBar from './StatusBar'
 
 const nodeTypes = { workflowNode: WorkflowNodeComp }
@@ -252,6 +253,7 @@ function WorkflowCanvas() {
 
             <StatusBar />
             <ExecutionLog />
+            <LeadSelector />
             <NodeSearchPicker />
         </div>
     )

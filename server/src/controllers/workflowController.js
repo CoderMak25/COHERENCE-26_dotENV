@@ -13,26 +13,32 @@ export const runWorkflow = async (req, res, next) => {
 
     if (!workflow.edges) workflow.edges = []
 
-    // Set up SSE headers
-    res.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-    })
+    // Disable any compression for SSE — must stream unbuffered
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache, no-transform')
+    res.setHeader('Connection', 'keep-alive')
+    res.setHeader('X-Accel-Buffering', 'no')  // nginx
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.status(200)
+    res.flushHeaders()
 
     const send = (event, data) => {
         res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+        // Force flush — critical for real-time SSE
+        if (typeof res.flush === 'function') res.flush()
     }
 
-    // Handle client disconnect (STOP button)
+    // Handle client disconnect (STOP button) — use RES close, not REQ close
+    // req.on('close') fires when POST body ends, res.on('close') fires on actual disconnect
     let aborted = false
-    req.on('close', () => { aborted = true })
+    res.on('close', () => { aborted = true })
 
     try {
-        await runWorkflowGraphSSE(workflow, send, () => aborted)
+        const leadIds = req.body?.leadIds || []
+        await runWorkflowGraphSSE(workflow, send, () => aborted, leadIds)
         send('done', { message: 'Workflow complete' })
     } catch (err) {
+        console.error('[WorkflowController] Error:', err)
         send('error', { message: err.message })
     }
 

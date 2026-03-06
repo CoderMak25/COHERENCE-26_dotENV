@@ -87,6 +87,10 @@ const useWorkflowStore = create((set, get) => ({
     showLog: true,
     _abortController: null,
 
+    // ── Lead Selection ──
+    selectedLeadIds: [],
+    showLeadSelector: false,
+
     // ── History ──
     history: [],
     historyIndex: -1,
@@ -98,6 +102,10 @@ const useWorkflowStore = create((set, get) => ({
     setEdges: (edgesOrFn) => set((state) => ({
         edges: typeof edgesOrFn === 'function' ? edgesOrFn(state.edges) : edgesOrFn,
     })),
+    setSelectedLeadIds: (idsOrFn) => set((state) => ({
+        selectedLeadIds: typeof idsOrFn === 'function' ? idsOrFn(state.selectedLeadIds) : idsOrFn,
+    })),
+    toggleLeadSelector: () => set((s) => ({ showLeadSelector: !s.showLeadSelector })),
     onNodesChange: (changes) => {
         const { nodes } = get()
         const updated = applyNodeChanges(changes, nodes)
@@ -391,7 +399,7 @@ const useWorkflowStore = create((set, get) => ({
         get().appendLog({ time: time(), tag: 'SYS', message: 'Sending workflow graph to backend...' })
 
         // Build workflow payload from canvas nodes/edges
-        const { nodes, edges } = get()
+        const { nodes, edges, selectedLeadIds } = get()
         const payload = {
             workflow: {
                 nodes: nodes.map(n => ({
@@ -406,7 +414,9 @@ const useWorkflowStore = create((set, get) => ({
                     to: e.target,
                     fromPort: e.sourceHandle || '0',
                 })),
-            }
+            },
+            // If specific leads selected, send their IDs
+            ...(selectedLeadIds.length > 0 ? { leadIds: selectedLeadIds } : {}),
         }
 
         const controller = new AbortController()
