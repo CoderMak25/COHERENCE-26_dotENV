@@ -4,16 +4,16 @@ import useWorkflowStore from './workflowStore'
 export default function FloatingToolbar() {
     const rf = useReactFlow()
     const {
-        undo, history, historyIndex,
-        saveWorkflow, loadWorkflow,
+        undo, history,
+        saveWorkflowToDB, saveWorkflowJSON, loadWorkflow,
         toggleLog, showLog,
-        running, runBackendWorkflow, stopWorkflow,
-        nodes,
+        running, runSimulation, executeOnLeads, stopWorkflow,
+        nodes, saving, dirty, assignedLeads, workflowId,
     } = useWorkflowStore()
 
     const handleClear = () => {
         if (confirm('Clear all nodes? This cannot be undone.')) {
-            useWorkflowStore.setState({ nodes: [], edges: [], selectedNodeId: null })
+            useWorkflowStore.setState({ nodes: [], edges: [], selectedNodeId: null, dirty: true })
         }
     }
 
@@ -33,9 +33,28 @@ export default function FloatingToolbar() {
         input.click()
     }
 
+    const handleSave = async () => {
+        try {
+            await saveWorkflowToDB()
+        } catch {
+            // If DB save fails, fall back to JSON download
+            saveWorkflowJSON()
+        }
+    }
+
+    const handleRun = () => {
+        if (workflowId && assignedLeads.length > 0) {
+            // Execute on backend with assigned leads
+            executeOnLeads()
+        } else {
+            // Simulate locally
+            runSimulation()
+        }
+    }
+
     return (
         <div className="wf-toolbar">
-            <button className="wf-tb-btn" title="Undo (Ctrl+Z)" disabled={historyIndex < 0} onClick={undo}>↩</button>
+            <button className="wf-tb-btn" title="Undo (Ctrl+Z)" disabled={history.length === 0} onClick={undo}>↩</button>
             <div className="wf-tb-sep" />
             <button className="wf-tb-btn" title="Zoom In" onClick={() => rf.zoomIn()}>+</button>
             <button className="wf-tb-btn wf-tb-zoom" title="Zoom Level">
@@ -44,8 +63,11 @@ export default function FloatingToolbar() {
             <button className="wf-tb-btn" title="Zoom Out" onClick={() => rf.zoomOut()}>−</button>
             <button className="wf-tb-btn" title="Fit View" onClick={() => rf.fitView({ padding: 0.2 })}>⊞</button>
             <div className="wf-tb-sep" />
-            <button className="wf-tb-btn" title="Save (Ctrl+S)" onClick={saveWorkflow}>↓</button>
-            <button className="wf-tb-btn" title="Load" onClick={handleLoad}>↑</button>
+            <button className="wf-tb-btn" title="Save to DB (Ctrl+S)" onClick={handleSave} disabled={saving}>
+                {saving ? '...' : dirty ? '↓●' : '↓'}
+            </button>
+            <button className="wf-tb-btn" title="Export JSON" onClick={saveWorkflowJSON}>⤓</button>
+            <button className="wf-tb-btn" title="Import JSON" onClick={handleLoad}>↑</button>
             <button className={`wf-tb-btn ${showLog ? 'wf-tb-active' : ''}`} title="Toggle Log" onClick={toggleLog}>◫</button>
             <button className="wf-tb-btn wf-tb-danger" title="Clear Canvas" onClick={handleClear}>✕</button>
             <div className="wf-tb-sep" />
@@ -60,10 +82,11 @@ export default function FloatingToolbar() {
             ) : (
                 <button
                     className="wf-tb-run"
-                    onClick={runBackendWorkflow}
+                    onClick={handleRun}
                     disabled={nodes.length === 0}
+                    title={assignedLeads.length > 0 ? `Execute on ${assignedLeads.length} leads` : 'Simulate flow'}
                 >
-                    ▶ RUN
+                    ▶ {assignedLeads.length > 0 ? `RUN (${assignedLeads.length})` : 'RUN'}
                 </button>
             )}
         </div>

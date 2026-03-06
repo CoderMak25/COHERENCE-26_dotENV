@@ -27,6 +27,7 @@ export const leadsAPI = {
     }
 }
 
+
 // Campaigns
 export const campaignsAPI = {
     getAll: () => api.get('/campaigns'),

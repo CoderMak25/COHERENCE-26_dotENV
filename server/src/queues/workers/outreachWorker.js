@@ -2,8 +2,8 @@ import { outreachQueue } from '../outreachQueue.js'
 import { processJob } from '../../services/executionEngine.js'
 import { pollForReplies, sendAiReply, initReplyWorker } from './replyWorker.js'
 
-// Process all queue jobs
-outreachQueue.process(async (job) => {
+// Process all queue jobs concurrently (up to 10 at a time) to speed up sending
+outreachQueue.process(10, async (job) => {
     const data = job.data
 
     // Route by job type
