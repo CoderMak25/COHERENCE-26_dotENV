@@ -6,14 +6,14 @@ import { sendEmail } from '../../services/emailService.js'
 import { outreachQueue } from '../outreachQueue.js'
 
 const MAX_AI_REPLIES = 3
-const REPLY_DELAY_MIN_MS = 45 * 60 * 1000    // 45 minutes
-const REPLY_DELAY_MAX_MS = 300 * 60 * 1000   // 5 hours
+// ⚡ TESTING: 1 min delay (change back to 45*60*1000 / 300*60*1000 for production)
+const REPLY_DELAY_MIN_MS = 1 * 60 * 1000     // 1 minute (testing)
+const REPLY_DELAY_MAX_MS = 1 * 60 * 1000     // 1 minute (testing)
 
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 
 /**
  * Poll Gmail for replies using Gmail API (thread-based).
- * Falls back to subject-based matching if no threadId.
  */
 export const pollForReplies = async () => {
     console.log('[ReplyWorker] Polling for replies...')
@@ -25,25 +25,47 @@ export const pollForReplies = async () => {
         return { repliesFound: 0 }
     }
 
-    // Find leads that have been emailed and have a Gmail threadId
+    console.log(`[ReplyWorker] Gmail connected as ${gmailStatus.email}`)
+
+    // Find ALL leads that have a Gmail threadId (any status except explicitly excluded ones)
     const activeLeads = await Lead.find({
-        status: { $in: ['Contacted', 'contacted', 'Replied', 'follow_up_sent', 'final_reminder_sent', 'replied'] },
-        humanTakeover: { $ne: true },
         gmailThreadId: { $ne: null },
+        humanTakeover: { $ne: true },
+        status: { $nin: ['needs_human', 'manual_conversation', 'Unsubscribed', 'invalid_no_contact'] },
     })
+
+    console.log(`[ReplyWorker] Found ${activeLeads.length} leads with threadId to check`)
+
+    if (activeLeads.length === 0) {
+        // Debug: check if any leads exist with the email
+        const allLeads = await Lead.find({}).select('email status gmailThreadId').limit(10)
+        console.log(`[ReplyWorker] Debug — sample leads:`, allLeads.map(l => ({
+            email: l.email,
+            status: l.status,
+            threadId: l.gmailThreadId || 'NONE'
+        })))
+    }
 
     let repliesFound = 0
 
     for (const lead of activeLeads) {
         try {
+            console.log(`[ReplyWorker] Checking thread ${lead.gmailThreadId} for ${lead.email}...`)
+
             // Get all messages in the thread
             const messages = await getThreadMessages(lead.gmailThreadId)
+            console.log(`[ReplyWorker] Thread ${lead.gmailThreadId} has ${messages?.length || 0} messages`)
+
             if (!messages || messages.length <= 1) continue  // Only our sent message, no reply
 
             // Find messages NOT from us (replies from the lead)
             const replies = messages.filter(msg => {
                 const fromEmail = msg.from.match(/<(.+?)>/)?.[1] || msg.from
-                return fromEmail.toLowerCase() !== gmailStatus.email.toLowerCase()
+                const isFromUs = fromEmail.toLowerCase() === gmailStatus.email.toLowerCase()
+                if (!isFromUs) {
+                    console.log(`[ReplyWorker] Found reply from ${fromEmail}: "${msg.snippet?.substring(0, 50)}..."`)
+                }
+                return !isFromUs
             })
 
             if (replies.length === 0) continue
@@ -58,9 +80,13 @@ export const pollForReplies = async () => {
                 detail: { $regex: latestReply.id }
             })
 
-            if (alreadyHandled) continue
+            if (alreadyHandled) {
+                console.log(`[ReplyWorker] Reply ${latestReply.id} already handled, skipping`)
+                continue
+            }
 
             // New reply found!
+            console.log(`[ReplyWorker] ✓ NEW REPLY from ${lead.email}!`)
             await handleReply(lead, latestReply.snippet || latestReply.subject, latestReply.id)
             repliesFound++
         } catch (err) {
@@ -94,6 +120,8 @@ const handleReply = async (lead, replyText, messageId) => {
     lead.lastRepliedAt = new Date()
     await lead.save()
 
+    console.log(`[ReplyWorker] Lead ${lead.name} status → Replied`)
+
     // Stop if human took over
     if (lead.humanTakeover) return
 
@@ -101,6 +129,7 @@ const handleReply = async (lead, replyText, messageId) => {
     if (lead.aiReplyCount >= MAX_AI_REPLIES) {
         lead.status = 'needs_human'
         await lead.save()
+        console.log(`[ReplyWorker] Lead ${lead.name} hit max AI replies → needs_human`)
         return
     }
 
@@ -132,15 +161,34 @@ export const sendAiReply = async (leadId, replyText) => {
         return
     }
 
+    console.log(`[ReplyWorker] Generating AI reply for ${lead.name} using past conversation...`)
+
+    // Fetch past conversation logs for context
+    const pastLogs = await Log.find({
+        leadId: lead._id,
+        channel: 'email',
+        direction: { $in: ['sent', 'received'] },
+    }).sort({ createdAt: 1 }).limit(20)
+
+    // Build conversation history string
+    const conversationHistory = pastLogs.map(log => {
+        const role = log.direction === 'sent' ? 'Us' : lead.name
+        return `[${role}]: ${log.body || log.detail || '(no content)'}`
+    }).join('\n')
+
     const responseBody = await generateOutreachMessage('reply_response', {
         name: lead.name || 'there',
+        company: lead.company || '',
+        position: lead.position || '',
         leadReply: replyText,
+        conversationHistory,
     })
 
     const result = await sendEmail({
         to: lead.email,
         subject: `Re: ${lead.gmailThreadSubject}`,
         body: responseBody,
+        threadId: lead.gmailThreadId,  // Reply in same thread
     })
 
     if (result.success) {
@@ -168,6 +216,7 @@ export const sendAiReply = async (leadId, replyText) => {
         }
 
         await lead.save()
+        console.log(`[ReplyWorker] ✓ AI reply #${lead.aiReplyCount} sent to ${lead.email}`)
     } else {
         console.error(`[ReplyWorker] Failed to send AI reply to ${lead.email}:`, result.error)
     }
@@ -179,10 +228,10 @@ export const initReplyWorker = () => {
     outreachQueue.add(
         { type: 'poll_replies' },
         {
-            repeat: { every: 5 * 60 * 1000 },
-            jobId: 'reply-poll',
+            repeat: { every: 1 * 60 * 1000 },
+            jobId: 'reply-poll-1min',
             removeOnComplete: true,
         }
     )
-    console.log('[ReplyWorker] Registered reply polling job (every 5 min)')
+    console.log('[ReplyWorker] Registered reply polling job (every 1 min)')
 }

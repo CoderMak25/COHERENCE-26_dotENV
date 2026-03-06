@@ -135,8 +135,9 @@ export async function disconnectGmail() {
 
 /**
  * Send an email via Gmail API. Returns { threadId, messageId, labelIds }.
+ * Pass threadId to reply within an existing thread.
  */
-export async function sendViaGmailAPI({ to, subject, body, from }) {
+export async function sendViaGmailAPI({ to, subject, body, from, threadId }) {
     const authed = await getAuthedClient()
     if (!authed) throw new Error('Gmail not connected. Please connect Gmail in settings.')
 
@@ -145,17 +146,35 @@ export async function sendViaGmailAPI({ to, subject, body, from }) {
 
     const fromAddr = from || senderEmail
 
-    // Build raw MIME message
-    const messageParts = [
+    // Build MIME headers
+    const headers = [
         `From: ${fromAddr}`,
         `To: ${to}`,
         `Subject: ${subject}`,
         `Content-Type: text/html; charset=utf-8`,
         `MIME-Version: 1.0`,
-        '',
-        `<div style="font-family: sans-serif">${body.replace(/\n/g, '<br>')}</div>`,
     ]
-    const rawMessage = messageParts.join('\r\n')
+
+    // If replying in a thread, add In-Reply-To and References headers
+    if (threadId) {
+        try {
+            const thread = await gmail.users.threads.get({
+                userId: 'me', id: threadId, format: 'metadata',
+                metadataHeaders: ['Message-ID'],
+            })
+            const firstMsg = thread.data.messages?.[0]
+            const msgIdHeader = firstMsg?.payload?.headers?.find(
+                h => h.name.toLowerCase() === 'message-id'
+            )?.value
+            if (msgIdHeader) {
+                headers.push(`In-Reply-To: ${msgIdHeader}`)
+                headers.push(`References: ${msgIdHeader}`)
+            }
+        } catch (e) { /* continue without threading headers */ }
+    }
+
+    headers.push('', `<div style="font-family: sans-serif">${body.replace(/\n/g, '<br>')}</div>`)
+    const rawMessage = headers.join('\r\n')
 
     // Base64url encode
     const encodedMessage = Buffer.from(rawMessage)
@@ -164,9 +183,12 @@ export async function sendViaGmailAPI({ to, subject, body, from }) {
         .replace(/\//g, '_')
         .replace(/=+$/, '')
 
+    const requestBody = { raw: encodedMessage }
+    if (threadId) requestBody.threadId = threadId
+
     const res = await gmail.users.messages.send({
         userId: 'me',
-        requestBody: { raw: encodedMessage },
+        requestBody,
     })
 
     return {

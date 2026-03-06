@@ -1,8 +1,9 @@
-import { useReactFlow } from 'reactflow'
+import { useReactFlow, useViewport } from 'reactflow'
 import useWorkflowStore from './workflowStore'
 
 export default function FloatingToolbar() {
     const rf = useReactFlow()
+    const { zoom } = useViewport()
     const {
         undo, history,
         saveWorkflowToDB, saveWorkflowJSON, loadWorkflow,
@@ -59,7 +60,7 @@ export default function FloatingToolbar() {
             <div className="wf-tb-sep" />
             <button className="wf-tb-btn" title="Zoom In" onClick={() => rf.zoomIn()}>+</button>
             <button className="wf-tb-btn wf-tb-zoom" title="Zoom Level">
-                {Math.round((rf.getZoom?.() || 1) * 100)}%
+                {Math.round(zoom * 100)}%
             </button>
             <button className="wf-tb-btn" title="Zoom Out" onClick={() => rf.zoomOut()}>−</button>
             <button className="wf-tb-btn" title="Fit View" onClick={() => rf.fitView({ padding: 0.2 })}>⊞</button>
