@@ -14,13 +14,13 @@ const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 // ── Helper: get subject line ──
 const getSubject = (step, lead) => {
     const first = (lead.name || '').split(' ')[0] || 'there'
-    const co = lead.company ? ` — ${lead.company}` : ''
+    const co = lead.company || ''
     const subjects = {
-        initial_outreach: `Quick intro${co}`,
-        follow_up: `Following up, ${first}`,
-        final_reminder: 'One last note',
+        initial_outreach: co ? `Hey ${first}, quick thought about ${co}` : `Hey ${first}, got a minute?`,
+        follow_up: `Just checking in, ${first}`,
+        final_reminder: `Last one from me, ${first}`,
     }
-    return subjects[step] || 'Hello'
+    return subjects[step] || `Hey ${first}`
 }
 
 // ── Helper: next status by step ──
@@ -367,6 +367,11 @@ async function handleSendEmail(node, ctx, send) {
         || getSubject(ctx.promptKey || 'initial_outreach', lead)
 
     send('log', { tag: 'OUT', message: `Sending to ${lead.email}...` })
+
+    // Append voice assistant link to every email
+    const voiceLink = `http://localhost:5173/voice/${lead._id}`
+    const voiceCTA = `\n\n---\n🎙️ Want to chat instead? Talk to our AI assistant here: ${voiceLink}`
+    body += voiceCTA
 
     const result = await sendEmail({ to: lead.email, subject, body })
     const pk = ctx.promptKey || 'initial_outreach'
@@ -998,6 +1003,11 @@ export const processJob = async ({ leadId, workflowId, nodeId, campaignId }) => 
 
             subject = replaceVars(subject, lead)
             body = replaceVars(body, lead)
+
+            // Append voice assistant link to every email
+            const voiceLink = `http://localhost:5173/voice/${lead._id}`
+            const voiceCTA = `\n\n---\n🎙️ Want to chat instead? Talk to our AI assistant here: ${voiceLink}`
+            body += voiceCTA
 
             const result = await sendEmail({ to: lead.email, subject, body })
 

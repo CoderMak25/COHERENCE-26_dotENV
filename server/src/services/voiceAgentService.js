@@ -34,28 +34,28 @@ const SARVAM_CHAT_MODEL = 'sarvam-m'
 const sessions = new Map()
 
 // ─── System prompt (used for Sarvam chat) ───
-const SYSTEM_PROMPT = `You are a friendly, highly conversational AI sales assistant representing NexReach AI.
+const SYSTEM_PROMPT = `You are a friendly, highly conversational AI sales assistant representing NexReach AI. Your name is Ria.
 
-CRITICAL INSTRUCTION: You must sound exactly like a real human on a phone call. 
-- Use natural filler words like "Umm", "Hmm", "Ah", "Well", "Yeah", "Got it".
-- Keep your sentences very short and conversational (2-3 sentences max).
-- Do NOT sound like an AI. Do NOT use lists, bullet points, or formal markdown.
-- End your responses with short, engaging questions.
+CRITICAL RULES:
+1. Sound exactly like a real human on a phone call. Use natural fillers like "Hmm", "Ah", "Well", "Yeah", "Accha", "Haan".
+2. Keep every response to 2 to 3 short sentences. Never give long answers.
+3. NEVER use hyphens, dashes, em dashes, bullet points, numbered lists, or any markdown formatting. Write in plain spoken language only.
+4. NEVER say "I had a hiccup" or "Could you repeat that" or anything that sounds robotic.
+5. Always match the language the user speaks. If Hindi, reply in Hindi. If English, reply in English. If Hinglish (mix of Hindi and English), reply in Hinglish.
+6. If the user goes off topic (jokes, random questions, personal chat), answer their question briefly and naturally, then gently steer back to the product conversation. Example: "Haha, that's a good one! By the way, have you thought about automating your outreach?"
 
-Product: NexReach AI is an AI platform that automates lead outreach, personalized messaging, and follow-ups.
-Capabilities: automated outreach, AI messaging, lead scoring, voice conversation agents, sales workflow automation.
-Benefits: increases reply rates, prioritizes valuable leads, automates follow-ups.
+About NexReach AI:
+NexReach AI automates lead outreach, personalized messaging, follow ups, and lead scoring using AI.
+It increases reply rates, prioritizes valuable leads, and saves hours of manual work.
 
-Conversation goals:
-1. Introduce the product briefly
-2. Ask about the lead's current outreach process
-3. Identify pain points
-4. Determine if they are interested in automation
-5. If interest is high, suggest scheduling a demo
+Your conversation goals:
+First, introduce the product briefly.
+Then ask about the lead's current outreach process.
+Identify their pain points.
+Check if they are interested in automation.
+If interest is high, suggest scheduling a demo.
 
-If the user says they are not interested, busy, or want to call later, politely wrap up.
-
-IMPORTANT: Always respond in the SAME LANGUAGE the user speaks in. If they speak Hindi, respond in Hindi. If English, respond in English. If they mix Hindi and English, respond in that same mix.`
+If the user is not interested or busy, politely wrap up and wish them well.`
 
 /**
  * Build lead-specific context string.
@@ -154,8 +154,8 @@ async function sarvamChat(messages) {
         },
         body: JSON.stringify({
             model: SARVAM_CHAT_MODEL,
-            temperature: 0.7,
-            max_tokens: 100,
+            temperature: 0.5,
+            max_tokens: 60,
             messages
         })
     })
@@ -316,32 +316,31 @@ export async function processMessage(sessionId, audioBuffer, language = 'hi-IN')
     // 2. Add user message to chat history
     session.chatHistory.push({ role: 'user', content: userText })
 
-    // Save user message to DB
-    await Conversation.findByIdAndUpdate(sessionId, {
+    // Save user message to DB (fire-and-forget, don't block)
+    Conversation.findByIdAndUpdate(sessionId, {
         $push: { messages: { speaker: 'user', text: userText, timestamp: new Date() } }
-    })
+    }).catch(() => { })
 
-    // 3. Generate AI response via Sarvam Chat
+    // 3. Generate AI response via Sarvam Chat (this is the main latency bottleneck)
     let aiText = ''
     try {
         const sanitized = buildSarvamMessages(session.chatHistory)
         aiText = await sarvamChat(sanitized)
     } catch (err) {
         console.error('[VoiceAgent] Sarvam chat failed:', err.message)
-        // Natural fallback — no "hiccup" language
         aiText = 'Sorry, can you say that again?'
     }
 
     // 4. Add AI message to chat history
     session.chatHistory.push({ role: 'assistant', content: aiText })
 
-    // Save AI message to DB
-    await Conversation.findByIdAndUpdate(sessionId, {
-        $push: { messages: { speaker: 'ai', text: aiText, timestamp: new Date() } }
-    })
-
-    // 5. Text-to-Speech (Sarvam)
-    const tts = await textToSpeech(aiText, session.language || 'hi-IN')
+    // Save AI message to DB AND generate TTS in parallel (huge speed win)
+    const [, tts] = await Promise.all([
+        Conversation.findByIdAndUpdate(sessionId, {
+            $push: { messages: { speaker: 'ai', text: aiText, timestamp: new Date() } }
+        }).catch(() => { }),
+        textToSpeech(aiText, session.language || 'hi-IN')
+    ])
 
     return {
         sessionId,
