@@ -196,8 +196,8 @@ export default function VoiceLogs() {
                                     ) : (
                                         selectedLog.messages.map((msg, idx) => (
                                             <div key={idx} className={`flex ${msg.speaker === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[85%] p-4 ${msg.speaker === 'user' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg-raised)] border border-[var(--border)] text-[var(--text-primary)]'}`}>
-                                                    <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${msg.speaker === 'user' ? 'text-white/70' : 'text-[var(--text-muted)]'}`}>
+                                                <div className={`max-w-[85%] p-4 ${msg.speaker === 'user' ? 'bg-[var(--accent)] text-black' : 'bg-[var(--bg-raised)] border border-[var(--border)] text-[var(--text-primary)]'}`}>
+                                                    <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${msg.speaker === 'user' ? 'text-black/60' : 'text-[var(--text-muted)]'}`}>
                                                         {msg.speaker === 'user' ? selectedLog.leadId?.name || 'Lead' : 'AI Assistant'}
                                                     </div>
                                                     <div className="text-sm leading-relaxed whitespace-pre-wrap">
