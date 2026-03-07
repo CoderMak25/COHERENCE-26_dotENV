@@ -109,8 +109,9 @@ export default function Leads() {
     }
 
     const getScoreColor = (score) => {
-        if (score >= 80) return 'var(--danger)'
-        if (score >= 50) return 'var(--warning, #d4a72c)'
+        if (score >= 81) return 'var(--danger)'
+        if (score >= 61) return 'var(--accent, #e07a2f)'
+        if (score >= 31) return 'var(--warning, #d4a72c)'
         return 'var(--text-muted)'
     }
 
@@ -312,8 +313,8 @@ export default function Leads() {
                                 key={p}
                                 onClick={() => setPage(p)}
                                 className={`h-[32px] min-w-[32px] px-1 text-[11px] font-bold flex items-center justify-center transition-transform hover:-translate-y-[1px] ${p === page
-                                        ? 'page-btn active'
-                                        : 'page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+                                    ? 'page-btn active'
+                                    : 'page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
                                     }`}
                             >{p}</button>
                         )

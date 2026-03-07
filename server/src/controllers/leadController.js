@@ -351,7 +351,14 @@ export const rescoreAll = async (req, res, next) => {
         for (const lead of leads) {
             const score = calculateLeadScore(lead.toObject())
             const scoreLabel = getScoreLabel(score)
-            if (lead.score !== score || lead.scoreLabel !== scoreLabel) {
+
+            // Fix legacy invalid status
+            const validStatuses = Lead.schema.path('status').enumValues
+            if (!validStatuses.includes(lead.status)) {
+                lead.status = 'New'
+            }
+
+            if (lead.score !== score || lead.scoreLabel !== scoreLabel || lead.isModified('status')) {
                 lead.score = score
                 lead.scoreLabel = scoreLabel
                 await lead.save()
