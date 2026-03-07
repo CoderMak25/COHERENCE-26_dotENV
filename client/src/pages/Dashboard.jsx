@@ -275,26 +275,26 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* 6️⃣ ACTIVE WORKFLOWS */}
+            {/* 6️⃣ ALL WORKFLOWS */}
             <div className="mb-6">
-                <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold mb-3">ACTIVE WORKFLOWS</h3>
+                <h3 className="text-[11px] uppercase text-[var(--text-muted)] tracking-widest font-bold mb-3">YOUR WORKFLOWS</h3>
                 <div className="flex gap-4 overflow-x-auto pb-2">
                     {workflowCounts.length === 0 && (
-                        <div className="brutalist-card p-4 min-w-[280px] text-center text-[11px] text-[var(--text-muted)] font-bold">No active workflows</div>
+                        <div className="brutalist-card p-4 min-w-[280px] text-center text-[11px] text-[var(--text-muted)] font-bold">No workflows created yet</div>
                     )}
                     {workflowCounts.map((wf) => (
-                        <div key={wf._id} onClick={() => navigate('/app/workflows')} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3 cursor-pointer hover:-translate-y-[2px] transition-transform">
+                        <div key={wf.id} onClick={() => navigate(`/app/workflows?id=${wf.id}`)} className="brutalist-card p-4 min-w-[280px] flex-shrink-0 flex flex-col gap-3 cursor-pointer hover:-translate-y-[2px] transition-transform">
                             <div className="flex justify-between items-start">
-                                <span className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest">{wf._id}</span>
-                                <span className="badge badge-success">ACTIVE</span>
+                                <span className="text-[11px] font-bold text-[var(--text-primary)] uppercase tracking-widest leading-tight">{wf.name}</span>
+                                <span className={`badge ${wf.active ? 'badge-success' : 'badge-neutral'}`}>{(wf.status || 'DRAFT').toUpperCase()}</span>
                             </div>
                             <div className="w-full h-[6px] bg-[var(--bg-raised)] border-2 border-[var(--border-bright)]">
-                                <div className="h-full bg-accent" style={{ width: '100%' }} />
+                                <div className={`h-full ${wf.active ? 'bg-accent' : 'bg-[var(--text-muted)]'}`} style={{ width: '100%' }} />
                             </div>
                             <div className="flex gap-4 text-[10px] font-bold tracking-widest">
                                 <span className="text-[var(--text-muted)]">LEADS: <span className="text-[var(--text-primary)]">{wf.count}</span></span>
                             </div>
-                            <button onClick={(e) => { e.stopPropagation(); navigate('/app/workflows') }} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] w-full">
+                            <button onClick={(e) => { e.stopPropagation(); navigate(`/app/workflows?id=${wf.id}`) }} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] text-[9px] py-[5px] w-full">
                                 VIEW WORKFLOW
                             </button>
                         </div>

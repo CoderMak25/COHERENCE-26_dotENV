@@ -19,9 +19,9 @@ function WorkflowNode({ id, data, selected }) {
         >
             {isActive && <div className="wf-pulse-ring" />}
 
-            {/* Input handle */}
+            {/* Input handle (Left side) */}
             {def.inputs > 0 && (
-                <Handle type="target" position={Position.Top} id="in" className="wf-handle-in" />
+                <Handle type="target" position={Position.Left} id="in" className="wf-handle-in" />
             )}
 
             {/* Content */}
@@ -34,29 +34,29 @@ function WorkflowNode({ id, data, selected }) {
                 <div className="wf-node-preview">{preview}</div>
             </div>
 
-            {/* Output handles */}
+            {/* Output handles (Right side) */}
             {def.outputs.length === 1 && (
-                <Handle type="source" position={Position.Bottom} id={def.outputs[0].id} className="wf-handle-out" />
+                <Handle type="source" position={Position.Right} id={def.outputs[0].id} className="wf-handle-out" />
             )}
             {def.outputs.length === 2 && (
-                <div className="wf-handle-multi">
-                    <div className="wf-handle-multi-item" style={{ left: 'calc(50% - 40px)' }}>
-                        <Handle type="source" position={Position.Bottom} id={def.outputs[0].id}
-                            className="wf-handle-out" style={{ position: 'relative', transform: 'none' }} />
-                        <span className="wf-handle-label">
+                <div className="wf-handle-multi" style={{ position: 'absolute', right: '-6px', top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div className="wf-handle-multi-item" style={{ position: 'relative' }}>
+                        <span className="wf-handle-label" style={{ right: '16px', top: '-4px', position: 'absolute' }}>
                             {def.outputs[0].id === 'yes' ? (data.config?.yesLabel || def.outputs[0].label) :
                                 def.outputs[0].id === 'success' ? (data.config?.successLabel || def.outputs[0].label) :
                                     def.outputs[0].label}
                         </span>
+                        <Handle type="source" position={Position.Right} id={def.outputs[0].id}
+                            className="wf-handle-out" style={{ position: 'relative', right: 0, top: 0, transform: 'none' }} />
                     </div>
-                    <div className="wf-handle-multi-item" style={{ left: 'calc(50% + 25px)' }}>
-                        <Handle type="source" position={Position.Bottom} id={def.outputs[1].id}
-                            className="wf-handle-out wf-handle-secondary" style={{ position: 'relative', transform: 'none' }} />
-                        <span className="wf-handle-label">
+                    <div className="wf-handle-multi-item" style={{ position: 'relative' }}>
+                        <span className="wf-handle-label" style={{ right: '16px', top: '-4px', position: 'absolute' }}>
                             {def.outputs[1].id === 'no' ? (data.config?.noLabel || def.outputs[1].label) :
                                 def.outputs[1].id === 'timeout' ? (data.config?.timeoutLabel || def.outputs[1].label) :
                                     def.outputs[1].label}
                         </span>
+                        <Handle type="source" position={Position.Right} id={def.outputs[1].id}
+                            className="wf-handle-out wf-handle-secondary" style={{ position: 'relative', right: 0, top: 0, transform: 'none' }} />
                     </div>
                 </div>
             )}

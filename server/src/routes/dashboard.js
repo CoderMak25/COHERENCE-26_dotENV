@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import Lead from '../models/Lead.js'
 import Log from '../models/Log.js'
+import Workflow from '../models/Workflow.js'
 
 const router = Router()
 
@@ -55,11 +56,16 @@ router.get('/stats', async (req, res) => {
             .limit(10)
             .lean()
 
-        // --- Workflows count ---
-        const workflowCounts = await Lead.aggregate([
-            { $match: { workflow: { $ne: null } } },
-            { $group: { _id: '$workflow', count: { $sum: 1 } } }
-        ])
+        // --- All saved workflows ---
+        const allWorkflows = await Workflow.find().lean()
+        const workflowCounts = allWorkflows.map(wf => ({
+            id: wf._id,
+            name: wf.name || 'Untitled',
+            count: wf.assignedLeads?.length || 0,
+            status: wf.status || 'Draft',
+            active: wf.status === 'Active',
+            nodeCount: wf.nodes?.length || 0,
+        }))
 
         // --- Lead scoring stats (4-tier) ---
         const scoringAgg = await Lead.aggregate([

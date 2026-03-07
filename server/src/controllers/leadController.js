@@ -1,5 +1,6 @@
 import Lead from '../models/Lead.js'
 import Log from '../models/Log.js'
+import Workflow from '../models/Workflow.js'
 import * as XLSX from 'xlsx'
 import { calculateLeadScore, getScoreLabel, processEngagementEvent } from '../services/leadScoringService.js'
 
@@ -193,6 +194,16 @@ export const getDashboardStats = async (req, res, next) => {
         const totalSent = await Log.countDocuments({ direction: 'sent', status: 'SENT' })
         const totalReplied = await Log.countDocuments({ direction: 'received' })
 
+        // Fetch all workflows (Active and Draft)
+        const allWorkflows = await Workflow.find()
+        const workflowCounts = allWorkflows.map(wf => ({
+            id: wf._id,
+            name: wf.name || wf._id,
+            count: wf.assignedLeads?.length || 0,
+            status: wf.status || 'Draft',
+            active: wf.status === 'Active'
+        }))
+
         res.json({
             total_leads: allLeads.length,
             by_status: statuses,
@@ -200,6 +211,7 @@ export const getDashboardStats = async (req, res, next) => {
             total_replied: totalReplied,
             reply_rate: totalSent > 0 ? Math.round(totalReplied / totalSent * 1000) / 10 : 0,
             needs_attention: statuses.needs_human || 0,
+            workflowCounts, // Add real workflow counts
         })
     } catch (err) {
         next(err)

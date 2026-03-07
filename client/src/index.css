@@ -834,24 +834,39 @@ body {
 /* ── Pulse Ring ── */
 .wf-pulse-ring {
   position: absolute;
-  inset: -6px;
+  inset: -8px;
   border: 2px solid var(--accent);
-  animation: wfPulse 1.2s ease-in-out infinite;
+  border-radius: 4px;
+  background: var(--accent);
+  opacity: 0.12;
+  animation: wfGlowPulse 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   pointer-events: none;
   z-index: -1;
+  filter: blur(8px);
 }
 
-@keyframes wfPulse {
+/* Active node card gets a bright glow border */
+.wf-node-card:has(.wf-pulse-ring) {
+  border-color: var(--accent) !important;
+  box-shadow:
+    0 0 12px rgba(200, 255, 0, 0.3),
+    0 0 30px rgba(200, 255, 0, 0.1);
+  transition: all 0.5s ease;
+}
+
+@keyframes wfGlowPulse {
 
   0%,
   100% {
-    opacity: 0.3;
-    transform: scale(1);
+    opacity: 0.08;
+    inset: -10px;
+    filter: blur(10px);
   }
 
   50% {
-    opacity: 0.7;
-    transform: scale(1.03);
+    opacity: 0.2;
+    inset: -14px;
+    filter: blur(14px);
   }
 }
 
@@ -861,7 +876,7 @@ body {
   height: 12px !important;
   background: var(--bg-surface) !important;
   border: 2px solid var(--border-bright) !important;
-  top: -6px !important;
+  left: -6px !important;
 }
 
 .wf-handle-out {
@@ -869,7 +884,7 @@ body {
   height: 12px !important;
   background: var(--accent) !important;
   border: 2px solid var(--border-bright) !important;
-  bottom: -6px !important;
+  right: -6px !important;
 }
 
 .wf-handle-secondary {
@@ -911,6 +926,45 @@ body {
   background: var(--bg-surface);
   color: var(--text-secondary);
   border: 1px solid var(--border);
+}
+
+/* ── Edge Flow Animations ── */
+.wf-edge-flow {
+  animation: edgeFlowDash 1.5s linear infinite;
+}
+
+.wf-edge-glow {
+  animation: edgeGlowPulse 3s ease-in-out infinite;
+}
+
+.wf-edge-dot {
+  filter: drop-shadow(0 0 3px var(--accent, #c8ff00));
+}
+
+.wf-edge-dot-glow {
+  filter: blur(2px);
+}
+
+@keyframes edgeFlowDash {
+  0% {
+    stroke-dashoffset: 20;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes edgeGlowPulse {
+
+  0%,
+  100% {
+    opacity: 0.06;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
 }
 
 /* ── Floating Toolbar ── */
