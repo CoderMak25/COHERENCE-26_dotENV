@@ -191,7 +191,7 @@ const useWorkflowStore = create((set, get) => ({
                 workflowName: wf.name,
                 nodes,
                 edges,
-                assignedLeads: (wf.assignedLeads || []).map(l => typeof l === 'object' ? l._id : l),
+                selectedLeadIds: (wf.assignedLeads || []).map(l => typeof l === 'object' ? l._id : l),
                 history: [],
                 dirty: false,
                 configPanelOpen: false,
@@ -203,14 +203,14 @@ const useWorkflowStore = create((set, get) => ({
     },
 
     saveWorkflowToDB: async () => {
-        const { workflowId, nodes, edges, workflowName, assignedLeads } = get()
+        const { workflowId, nodes, edges, workflowName, selectedLeadIds } = get()
         set({ saving: true })
         try {
             const payload = {
                 name: workflowName,
                 nodes: serializeNodes(nodes),
                 edges: serializeEdges(edges),
-                assignedLeads,
+                assignedLeads: selectedLeadIds,
             }
             let saved
             if (workflowId) {
