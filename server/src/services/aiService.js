@@ -205,67 +205,71 @@ Rules:
 //  AI Workflow Graph Generator — text prompt → React Flow JSON
 // ═══════════════════════════════════════════════════════════════════
 
-const WORKFLOW_SYSTEM_PROMPT = `You are an expert workflow automation architect. The user will describe a workflow in plain English. You must output a VALID JSON object (no markdown, no code fences, no explanation) representing a React Flow graph with "nodes" and "edges" arrays.
+const WORKFLOW_SYSTEM_PROMPT = `You are an expert workflow automation architect for a sales outreach platform. The user will describe a workflow in plain English. You must output a VALID JSON object (no markdown, no code fences, no explanation) with "nodes" and "edges" arrays.
 
 AVAILABLE NODE TYPES (use ONLY these exact type strings):
-TRIGGERS (inputs: 0, outputs: ["out"]):
-- trigger_new_lead: "New Lead" — fires when a lead is added
-- trigger_form_submit: "Form Submit" — fires on form submission
-- trigger_scheduled: "Scheduled" — cron trigger
-- trigger_webhook: "Webhook" — HTTP POST trigger
-- trigger_manual: "Manual Run" — manually triggered
+
+TRIGGERS (inputs: 0, outputs: ["out"]) — Every workflow starts with exactly ONE trigger:
+- trigger_new_lead: fires when a new lead is added
+- trigger_manual: manually triggered by clicking RUN
 
 OUTREACH (inputs: 1, outputs: ["out"]):
-- send_email: "Send Email" — send personalized email
-- send_telegram: "Telegram" — send Telegram message
-- linkedin_dm: "LinkedIn DM" — send LinkedIn message
-- send_sms: "Send SMS" — send SMS
-- whatsapp: "WhatsApp" — send WhatsApp message
-- phone_call: "Phone Call" — log or trigger call
-- slack_alert: "Slack Alert" — internal Slack notification
+- send_email: send personalized email (uses the AI-generated message from ai_generate)
+- send_telegram: send Telegram message
+- linkedin_dm: send LinkedIn message
 
 AI & SMART (inputs: 1, outputs: ["out"]):
-- ai_generate: "AI Write" — generate message with LLM
-- ai_score: "AI Lead Score" — score lead 0-100
-- ai_classify: "AI Classify" — classify intent/sentiment
-- ai_enrich: "AI Enrich" — enrich lead data
+- ai_generate: generate personalized email message using AI. Config: { "tone": "professional"|"casual"|"friendly", "prompt": "optional custom prompt" }
 
 LOGIC & FLOW:
-- delay: (inputs: 1, outputs: ["out"]) "Delay" — wait a duration
-- condition: (inputs: 1, outputs: ["yes","no"]) "If / Else" — branch on condition
-- ab_split: (inputs: 1, outputs: ["a","b"]) "A/B Split" — split traffic
-- loop: (inputs: 1, outputs: ["next","done"]) "Loop"
-- merge: (inputs: 1, outputs: ["out"]) "Merge" — merge branches
-- wait_event: (inputs: 1, outputs: ["success","timeout"]) "Wait For Event"
+- delay: (inputs: 1, outputs: ["out"]) wait a duration. Config: { "delayType": "random", "min": 2, "max": 5, "unit": "days" }
+- condition: (inputs: 1, outputs: ["yes","no"]) branch on a condition. Config: { "field": "email_opened", "operator": "equals", "value": "true" }
+- wait_event: (inputs: 1, outputs: ["success","timeout"]) pause until event or timeout. Config: { "event": "email_opened", "timeoutValue": 3, "timeoutUnit": "days" }
 
 DATA & CRM (inputs: 1, outputs: ["out"]):
-- update_crm: "Update CRM"
-- add_tag: "Add Tag"
-- remove_tag: "Remove Tag"
-- set_field: "Set Field"
-- http_request: "HTTP Request"
+- add_tag: tag the lead. Config: { "tag": "contacted" }
+- update_crm: update CRM. Config: { "crm": "hubspot", "action": "update_stage", "value": "contacted" }
 
 SAFETY:
-- throttle: (inputs: 1, outputs: ["out"]) "Throttle" — rate limit
-- unsubscribe_check: (inputs: 1, outputs: ["safe","unsub"]) "Unsub Check"
-- end: (inputs: 1, outputs: []) "End" — end branch
+- throttle: (inputs: 1, outputs: ["out"]) rate limit outreach. Config: { "maxPerHour": 10, "maxPerDay": 25 }
+- end: (inputs: 1, outputs: []) terminate a branch. Config: { "status": "completed" }
 
-OUTPUT FORMAT (strict JSON, no other text):
+CRITICAL RULES:
+1. Every workflow MUST start with exactly ONE trigger node (trigger_new_lead or trigger_manual).
+2. EVERY branch MUST end with an "end" node. If there is a condition with yes/no, BOTH paths must eventually reach an "end" node.
+3. ALWAYS place "ai_generate" (AI Write) BEFORE "send_email". The ai_generate node generates the email body that send_email uses. Never use send_email without ai_generate before it.
+4. ALWAYS place "throttle" before send_email to enforce rate limiting.
+5. Every edge must have a "sourceHandle" matching the source node's output port ("out", "yes", "no", "success", "timeout").
+6. Node IDs must be unique: "n1", "n2", "n3", etc.
+7. Output ONLY valid JSON. No markdown, no explanation, no code fences.
+
+CORRECT WORKFLOW PATTERN EXAMPLE:
+For "Send an email, if they open it tag them, else follow up after 3 days":
 {
   "nodes": [
-    { "id": "n1", "nodeType": "<type>", "label": "<display name>", "config": {} }
+    { "id": "n1", "nodeType": "trigger_new_lead", "label": "New Lead", "config": {} },
+    { "id": "n2", "nodeType": "ai_generate", "label": "AI Write", "config": { "tone": "professional" } },
+    { "id": "n3", "nodeType": "throttle", "label": "Throttle", "config": { "maxPerHour": 10, "maxPerDay": 25 } },
+    { "id": "n4", "nodeType": "send_email", "label": "Send Email", "config": {} },
+    { "id": "n5", "nodeType": "wait_event", "label": "Wait: Opened?", "config": { "event": "email_opened", "timeoutValue": 3, "timeoutUnit": "days" } },
+    { "id": "n6", "nodeType": "add_tag", "label": "Tag: Engaged", "config": { "tag": "engaged" } },
+    { "id": "n7", "nodeType": "ai_generate", "label": "AI Follow-up", "config": { "tone": "friendly", "prompt": "Write a friendly follow-up email" } },
+    { "id": "n8", "nodeType": "send_email", "label": "Follow-up Email", "config": {} },
+    { "id": "n9", "nodeType": "end", "label": "End", "config": { "status": "completed" } },
+    { "id": "n10", "nodeType": "end", "label": "End", "config": { "status": "completed" } }
   ],
   "edges": [
-    { "source": "n1", "target": "n2", "sourceHandle": "<output port id>" }
+    { "source": "n1", "target": "n2", "sourceHandle": "out" },
+    { "source": "n2", "target": "n3", "sourceHandle": "out" },
+    { "source": "n3", "target": "n4", "sourceHandle": "out" },
+    { "source": "n4", "target": "n5", "sourceHandle": "out" },
+    { "source": "n5", "target": "n6", "sourceHandle": "success" },
+    { "source": "n5", "target": "n7", "sourceHandle": "timeout" },
+    { "source": "n6", "target": "n9", "sourceHandle": "out" },
+    { "source": "n7", "target": "n8", "sourceHandle": "out" },
+    { "source": "n8", "target": "n10", "sourceHandle": "out" }
   ]
-}
-
-RULES:
-1. Every workflow MUST start with exactly one trigger node.
-2. Every edge must have a valid "sourceHandle" matching the source node's output port id (e.g. "out", "yes", "no", "success", "timeout", "a", "b", "safe", "unsub").
-3. Node IDs must be unique strings like "n1", "n2", etc.
-4. Keep config objects minimal but logical (e.g. for delay, set min/max/unit).
-5. Output ONLY the JSON object. No markdown, no explanation, no code fences.`
+}`
 
 export const generateWorkflowGraph = async (userPrompt) => {
     const response = await getClient().chat.completions.create({
@@ -274,7 +278,7 @@ export const generateWorkflowGraph = async (userPrompt) => {
             { role: 'system', content: WORKFLOW_SYSTEM_PROMPT },
             { role: 'user', content: userPrompt },
         ],
-        temperature: 0.4,
+        temperature: 0.3,
         max_tokens: 2048,
     })
 
@@ -288,20 +292,67 @@ export const generateWorkflowGraph = async (userPrompt) => {
 
     const parsed = JSON.parse(cleaned)
 
-    // Transform into React Flow format with auto-layout (horizontal, left-to-right)
-    const nodes = (parsed.nodes || []).map((n, i) => ({
-        id: n.id,
-        type: 'workflowNode',
-        position: { x: 100 + i * 300, y: 150 + (i % 2 === 0 ? 0 : 60) },
-        data: {
-            nodeType: n.nodeType,
-            label: n.label || n.nodeType,
-            enabled: true,
-            config: n.config || {},
-        },
-    }))
+    // Build adjacency map for smarter layout
+    const nodeList = parsed.nodes || []
+    const edgeList = parsed.edges || []
 
-    const edges = (parsed.edges || []).map((e, i) => ({
+    // Calculate depth (distance from trigger) for each node for better layout
+    const depthMap = {}
+    const childrenMap = {}
+    for (const e of edgeList) {
+        if (!childrenMap[e.source]) childrenMap[e.source] = []
+        childrenMap[e.source].push({ target: e.target, handle: e.sourceHandle })
+    }
+    // BFS from trigger
+    const trigger = nodeList[0]
+    if (trigger) {
+        depthMap[trigger.id] = 0
+        const queue = [trigger.id]
+        while (queue.length > 0) {
+            const current = queue.shift()
+            const children = childrenMap[current] || []
+            children.forEach((child, idx) => {
+                if (!(child.target in depthMap)) {
+                    depthMap[child.target] = depthMap[current] + 1
+                    queue.push(child.target)
+                }
+            })
+        }
+    }
+
+    // Count nodes at each depth for vertical spacing
+    const depthCount = {}
+    const depthIndex = {}
+    for (const n of nodeList) {
+        const d = depthMap[n.id] ?? 0
+        if (!depthCount[d]) depthCount[d] = 0
+        depthIndex[n.id] = depthCount[d]
+        depthCount[d]++
+    }
+
+    // Transform into React Flow format with tree-like layout
+    const nodes = nodeList.map((n) => {
+        const depth = depthMap[n.id] ?? 0
+        const idxAtDepth = depthIndex[n.id] ?? 0
+        const totalAtDepth = depthCount[depth] ?? 1
+        const yCenter = 250
+        const ySpacing = 180
+        const yOffset = (idxAtDepth - (totalAtDepth - 1) / 2) * ySpacing
+
+        return {
+            id: n.id,
+            type: 'workflowNode',
+            position: { x: 80 + depth * 320, y: yCenter + yOffset },
+            data: {
+                nodeType: n.nodeType,
+                label: n.label || n.nodeType,
+                enabled: true,
+                config: n.config || {},
+            },
+        }
+    })
+
+    const edges = edgeList.map((e, i) => ({
         id: `e_${i}_${Date.now().toString(36)}`,
         source: e.source,
         target: e.target,
@@ -311,3 +362,4 @@ export const generateWorkflowGraph = async (userPrompt) => {
 
     return { nodes, edges }
 }
+
