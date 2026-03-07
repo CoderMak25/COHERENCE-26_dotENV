@@ -780,19 +780,35 @@ async function handleSetField(node, ctx, send) {
 // ── THROTTLE ─────────────────────────────────────────────────────
 async function handleThrottle(node, ctx, send) {
     const config = node.config || {}
-    const maxPerHour = parseInt(config.maxPerHour || 50)
+    const maxPerHour = parseInt(config.maxPerHour) || 10
+    const maxPerDay = parseInt(config.maxPerDay) || 25
 
+    // Count emails sent in the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-    const sentCount = await Log.countDocuments({
+    const sentThisHour = await Log.countDocuments({
         direction: 'sent', status: 'SENT', createdAt: { $gte: oneHourAgo }
     })
 
-    if (sentCount >= maxPerHour) {
-        send('log', { tag: 'SAF', message: `Rate limit: ${sentCount}/${maxPerHour}/hr — stopping` })
-        return { stop: true, reason: 'throttle' }
+    // Count emails sent today (since midnight)
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const sentToday = await Log.countDocuments({
+        direction: 'sent', status: 'SENT', createdAt: { $gte: todayStart }
+    })
+
+    // Check daily limit first (more important)
+    if (sentToday >= maxPerDay) {
+        send('log', { tag: 'SAF', message: `⛔ Daily limit reached: ${sentToday}/${maxPerDay} emails sent today — stopping` })
+        return { stop: true, reason: 'daily_limit' }
     }
 
-    send('log', { tag: 'SAF', message: `Throttle OK: ${sentCount}/${maxPerHour}/hr` })
+    // Check hourly limit
+    if (sentThisHour >= maxPerHour) {
+        send('log', { tag: 'SAF', message: `⛔ Hourly limit reached: ${sentThisHour}/${maxPerHour}/hr — stopping` })
+        return { stop: true, reason: 'hourly_limit' }
+    }
+
+    send('log', { tag: 'SAF', message: `✓ Throttle OK: ${sentThisHour}/${maxPerHour}/hr, ${sentToday}/${maxPerDay}/day` })
     return { port: 0 }
 }
 
