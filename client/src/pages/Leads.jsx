@@ -149,6 +149,9 @@ export default function Leads() {
                     <button onClick={handleExport} className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)]">
                         EXPORT
                     </button>
+                    <a href="/sample_leads_format.csv" download="sample_leads_format.csv" className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] flex items-center justify-center m-0 no-underline cursor-pointer">
+                        SAMPLE CSV
+                    </a>
                     <label className="btn-base bg-[var(--bg-raised)] text-[var(--text-primary)] cursor-pointer flex items-center justify-center m-0">
                         IMPORT CSV
                         <input type="file" className="hidden" accept=".csv,.xlsx" onChange={handleImport} />
