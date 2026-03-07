@@ -760,8 +760,11 @@ const useWorkflowStore = create((set, get) => ({
                             const data = JSON.parse(line.slice(6))
                             if (eventType === 'log') {
                                 get().appendLog({ time: time(), tag: data.tag || '--', message: data.message })
+                            } else if (eventType === 'node_active') {
+                                set({ activeNodeId: data.id })
                             } else if (eventType === 'done') {
                                 // Workflow complete
+                                set({ activeNodeId: null })
                             } else if (eventType === 'error') {
                                 get().appendLog({ time: time(), tag: 'ERR', message: data.message })
                             }

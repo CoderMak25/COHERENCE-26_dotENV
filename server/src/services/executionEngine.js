@@ -212,6 +212,9 @@ async function executeForLead(startNodeId, graph, lead, send, isAborted) {
             continue
         }
 
+        // Notify frontend that this node is now executing (triggers the glow)
+        send('node_active', { id: currentId, type: node.type })
+
         // Execute this node
         const result = await executeNode(node, ctx, send)
 

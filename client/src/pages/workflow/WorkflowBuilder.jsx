@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import ReactFlow, {
     Background,
     MiniMap,
@@ -28,6 +29,7 @@ const edgeTypes = { workflowEdge: WorkflowEdgeComp }
 function WorkflowCanvas() {
     const reactFlowWrapper = useRef(null)
     const reactFlowInstance = useReactFlow()
+    const [searchParams] = useSearchParams()
     const {
         nodes, edges, setNodes, setEdges,
         addNode, addEdge, deleteNode, deleteEdge,
@@ -39,13 +41,18 @@ function WorkflowCanvas() {
         loadSavedWorkflows, savedWorkflows, loadWorkflowFromDB,
     } = useWorkflowStore()
 
-    // Load saved workflows list on mount, load first if available
+    // Load saved workflows list on mount; if URL has ?id=xxx, load that workflow
     useEffect(() => {
         const init = async () => {
             await loadSavedWorkflows()
-            const wfs = useWorkflowStore.getState().savedWorkflows
-            if (wfs.length > 0) {
-                await loadWorkflowFromDB(wfs[0]._id)
+            const targetId = searchParams.get('id')
+            if (targetId) {
+                await loadWorkflowFromDB(targetId)
+            } else {
+                const wfs = useWorkflowStore.getState().savedWorkflows
+                if (wfs.length > 0) {
+                    await loadWorkflowFromDB(wfs[0]._id)
+                }
             }
         }
         init()
