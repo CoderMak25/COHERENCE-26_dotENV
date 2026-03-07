@@ -1,0 +1,9 @@
+product_id,product_name,category,price,stock_quantity,supplier
+P001,Wireless Mouse,Electronics,29.99,150,TechSupply Co
+P002,Ergonomic Keyboard,Electronics,79.50,85,TechSupply Co
+P003,USB-C Hub,Accessories,45.00,200,GadgetWorld
+P004,Monitor Stand,Furniture,120.00,40,OfficeGear
+P005,Noise Cancelling Headphones,Electronics,199.99,60,AudioMax
+P006,Desk Lamp,Furniture,35.00,110,HomeDecor Ltd
+P007,Webcam HD,Electronics,89.99,75,TechSupply Co
+P008,Laptop Sleeve,Accessories,25.00,300,GadgetWorld

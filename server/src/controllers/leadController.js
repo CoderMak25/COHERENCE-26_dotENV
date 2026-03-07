@@ -29,7 +29,7 @@ export const getLeads = async (req, res, next) => {
 
         const total = await Lead.countDocuments(filter)
         const leads = await Lead.find(filter)
-            .sort({ score: -1, createdAt: -1 })
+            .sort({ score: -1, name: 1, createdAt: -1 })
             .skip((Number(page) - 1) * Number(limit))
             .limit(Number(limit))
 
@@ -218,31 +218,67 @@ export const importLeads = async (req, res, next) => {
         const sheet = workbook.Sheets[sheetName]
         const rows = XLSX.utils.sheet_to_json(sheet)
 
+        if (!rows || rows.length === 0) {
+            return res.status(400).json({ error: 'The uploaded file is empty or could not be parsed.' })
+        }
+
+        // --- CSV Structure Validation ---
+        // The file MUST have a "name" (or "Name") column AND at least one
+        // contact method column ("email"/"Email" or "linkedinUrl"/"LinkedinUrl").
+        const sampleHeaders = Object.keys(rows[0]).map(h => h.toLowerCase().trim())
+        const hasNameCol = sampleHeaders.some(h => h === 'name')
+        const hasEmailCol = sampleHeaders.some(h => h === 'email')
+        const hasLinkedinCol = sampleHeaders.some(h => h === 'linkedinurl')
+
+        if (!hasNameCol) {
+            return res.status(400).json({
+                error: 'Invalid CSV format: The file does not contain a "name" column. Please upload a CSV with at least "name" and one contact method (email or linkedinUrl).'
+            })
+        }
+        if (!hasEmailCol && !hasLinkedinCol) {
+            return res.status(400).json({
+                error: 'Invalid CSV format: The file does not contain any contact method column ("email" or "linkedinUrl"). Each lead needs at least one way to be contacted.'
+            })
+        }
+
         let imported = 0
         let skipped = 0
         const errors = []
 
         for (const row of rows) {
             try {
-                const leadData = {
-                    name: row.name || row.Name || '',
-                    email: (row.email || row.Email || '').toLowerCase().trim(),
-                    company: row.company || row.Company || '',
-                    position: row.position || row.Position || row.role || row.Role || '',
-                    tags: row.tags ? String(row.tags).split(',').map(t => t.trim()) : [],
-                    status: 'New'
-                }
+                const name = (row.name || row.Name || '').trim()
+                const email = (row.email || row.Email || '').toLowerCase().trim()
+                const linkedinUrl = (row.linkedinUrl || row.LinkedinUrl || row.linkedin_url || row.Linkedin_Url || '').trim()
+                const company = (row.company || row.Company || '').trim()
+                const position = (row.position || row.Position || row.role || row.Role || '').trim()
+                const industry = (row.industry || row.Industry || '').trim()
+                const tagsRaw = row.tags || row.Tags || ''
+                const tags = tagsRaw ? String(tagsRaw).split(/[,|]/).map(t => t.trim()).filter(Boolean) : []
 
-                if (!leadData.name || !leadData.email) {
+                // Row-level validation: name is required + at least one contact
+                if (!name) {
+                    skipped++
+                    continue
+                }
+                if (!email && !linkedinUrl) {
                     skipped++
                     continue
                 }
 
+                const leadData = { name, email: email || undefined, linkedinUrl: linkedinUrl || undefined, company, position, industry, tags, status: 'New' }
+
                 // Calculate lead score for imported lead
                 const score = calculateLeadScore(leadData)
                 const scoreLabel = getScoreLabel(score)
+
+                // Upsert by email if email exists, otherwise by name+linkedinUrl
+                const query = email
+                    ? { email }
+                    : { name, linkedinUrl }
+
                 await Lead.findOneAndUpdate(
-                    { email: leadData.email },
+                    query,
                     { $set: { ...leadData, score, scoreLabel } },
                     { upsert: true, new: true }
                 )
@@ -254,6 +290,12 @@ export const importLeads = async (req, res, next) => {
                     errors.push({ row: row, error: err.message })
                 }
             }
+        }
+
+        if (imported === 0 && skipped > 0) {
+            return res.status(400).json({
+                error: `No leads could be imported. ${skipped} row(s) were missing a name or contact method (email/linkedinUrl). Please check your CSV data.`
+            })
         }
 
         res.json({ imported, skipped, errors })
