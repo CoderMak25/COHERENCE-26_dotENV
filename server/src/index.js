@@ -7,6 +7,11 @@ const __dirname = dirname(__filename)
 // Load env from server/.env (one level up from src)
 dotenv.config({ path: resolve(__dirname, '../.env') })
 
+// Prevent unhandled Redis/ioredis promise rejections from crashing the server
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection (non-fatal):', reason?.message || reason)
+})
+
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'

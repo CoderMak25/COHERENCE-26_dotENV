@@ -51,11 +51,13 @@ export default function Leads() {
         const file = e.target.files[0]
         if (!file) return
         try {
-            await leadsAPI.import(file)
+            const result = await leadsAPI.import(file)
             refetch()
-            alert('Import successful!')
+            const msg = `Import successful!\n\n✅ Imported: ${result.imported}\n⏭️ Skipped: ${result.skipped}${result.errors?.length ? `\n⚠️ Errors: ${result.errors.length}` : ''}`
+            alert(msg)
         } catch (err) {
-            alert('Import failed: ' + (err.error || err.message || err))
+            const errorMsg = err?.error || err?.message || 'Unknown error'
+            alert('⚠️ Import Failed\n\n' + errorMsg)
         }
         e.target.value = null
     }
@@ -111,6 +113,29 @@ export default function Leads() {
         if (score >= 50) return 'var(--warning, #d4a72c)'
         return 'var(--text-muted)'
     }
+
+    // Build page numbers for pagination
+    const buildPageNumbers = () => {
+        const totalPages = pagination?.pages || 1
+        const current = page
+        const pages = []
+
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i)
+        } else {
+            pages.push(1)
+            if (current > 3) pages.push('...')
+            const start = Math.max(2, current - 1)
+            const end = Math.min(totalPages - 1, current + 1)
+            for (let i = start; i <= end; i++) pages.push(i)
+            if (current < totalPages - 2) pages.push('...')
+            pages.push(totalPages)
+        }
+        return pages
+    }
+
+    // Row offset for global numbering
+    const rowOffset = ((pagination?.page || 1) - 1) * (pagination?.limit || 25)
 
     return (
         <div className="absolute inset-0 overflow-y-auto p-[28px] bg-[var(--bg-base)] flex flex-col animate-stagger">
@@ -230,6 +255,7 @@ export default function Leads() {
                         )}
                         {!loading && leads.map((lead, index) => {
                             const badge = getStatusBadge(lead.status)
+                            const globalIndex = rowOffset + index + 1
                             return (
                                 <tr key={lead._id} className={`hover:bg-[var(--bg-hover)] transition-colors duration-75 ${index % 2 === 0 ? 'bg-[var(--bg-surface)]' : 'bg-[var(--bg-base)]'}`}>
                                     <td className="p-[12px_16px]">
@@ -240,7 +266,7 @@ export default function Leads() {
                                             onChange={() => toggleSelect(lead._id)}
                                         />
                                     </td>
-                                    <td className="p-[12px_16px] text-[var(--text-muted)]">{String(index + 1).padStart(2, '0')}</td>
+                                    <td className="p-[12px_16px] text-[var(--text-muted)]">{String(globalIndex).padStart(2, '0')}</td>
                                     <td className="p-[12px_16px] text-[var(--text-primary)]">{lead.name}</td>
                                     <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.company}</td>
                                     <td className="p-[12px_16px] text-[var(--text-secondary)]">{lead.position}</td>
@@ -267,14 +293,38 @@ export default function Leads() {
             {/* PAGINATION */}
             <div className="mt-5 pt-4 flex items-center justify-between flex-shrink-0 border-t-2 border-[var(--border-bright)]">
                 <span className="text-[11px] font-bold uppercase text-[var(--text-muted)] tracking-widest">
-                    SHOWING {(pagination?.page - 1) * pagination?.limit + 1 || 0}–{Math.min((pagination?.page) * pagination?.limit, pagination?.total || 0) || 0} OF {pagination?.total || 0} LEADS
+                    SHOWING {pagination?.total > 0 ? rowOffset + 1 : 0}–{Math.min(rowOffset + (pagination?.limit || 25), pagination?.total || 0)} OF {pagination?.total || 0} LEADS
                 </span>
-                <div className="flex gap-2">
-                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] disabled:opacity-50">‹</button>
-                    <button className="h-[32px] w-[32px] page-btn active flex items-center justify-center transition-transform hover:-translate-y-[1px]">{page}</button>
-                    <span className="text-[var(--text-muted)] font-bold flex items-center justify-center px-2">...</span>
-                    <button className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] cursor-default">{pagination?.pages || 1}</button>
-                    <button onClick={() => setPage(p => Math.min(pagination?.pages || 1, p + 1))} disabled={!pagination?.pages || page >= pagination.pages} className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] disabled:opacity-50">›</button>
+                <div className="flex gap-1">
+                    {/* Previous button */}
+                    <button
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed"
+                    >‹</button>
+
+                    {/* Page number buttons */}
+                    {buildPageNumbers().map((p, i) =>
+                        p === '...' ? (
+                            <span key={`ellipsis-${i}`} className="h-[32px] w-[24px] flex items-center justify-center text-[var(--text-muted)] text-[11px] font-bold select-none">…</span>
+                        ) : (
+                            <button
+                                key={p}
+                                onClick={() => setPage(p)}
+                                className={`h-[32px] min-w-[32px] px-1 text-[11px] font-bold flex items-center justify-center transition-transform hover:-translate-y-[1px] ${p === page
+                                        ? 'page-btn active'
+                                        : 'page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+                                    }`}
+                            >{p}</button>
+                        )
+                    )}
+
+                    {/* Next button */}
+                    <button
+                        onClick={() => setPage(p => Math.min(pagination?.pages || 1, p + 1))}
+                        disabled={!pagination?.pages || page >= pagination.pages}
+                        className="h-[32px] w-[32px] page-btn bg-[var(--bg-surface)] text-[var(--text-primary)] text-[11px] font-bold flex items-center justify-center hover:bg-[var(--bg-hover)] hover:-translate-y-[1px] disabled:opacity-40 disabled:cursor-not-allowed"
+                    >›</button>
                 </div>
             </div>
         </div>

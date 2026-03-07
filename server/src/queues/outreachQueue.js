@@ -12,11 +12,26 @@ if (redisUrl) {
                 maxRetriesPerRequest: null,
                 retryStrategy: () => null,
                 enableReadyCheck: false,
+                reconnectOnError: () => false,
                 ...(isTls ? { tls: { rejectUnauthorized: false } } : {})
             }
         }
 
         outreachQueue = new Bull('outreach', redisUrl, bullOptions)
+
+        // Attach error handlers to Bull's internal ioredis clients
+        // so DNS/connection failures don't become unhandled rejections
+        const silenceClient = (client) => {
+            if (client && typeof client.on === 'function') {
+                client.on('error', (err) => {
+                    console.warn('Bull redis client error (non-fatal):', err.message)
+                })
+            }
+        }
+        silenceClient(outreachQueue.client)
+        outreachQueue.on('error', (err) => {
+            console.error('Queue error:', err.message)
+        })
 
         outreachQueue.on('completed', (job) => {
             console.log(`Job ${job.id} completed`)
@@ -24,10 +39,6 @@ if (redisUrl) {
 
         outreachQueue.on('failed', (job, err) => {
             console.error(`Job ${job.id} failed:`, err.message)
-        })
-
-        outreachQueue.on('error', (err) => {
-            console.error('Queue error:', err.message)
         })
     } catch (err) {
         console.warn('Bull queue init failed:', err.message)

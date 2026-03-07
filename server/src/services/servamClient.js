@@ -35,7 +35,7 @@ export async function speechToText(audioBuffer, languageCode = 'en-IN') {
         const formData = new FormData()
         formData.append('file', blob, 'audio.webm')
         formData.append('language_code', languageCode)
-        formData.append('model', 'saarika:v2.5') // Updated from v2
+        formData.append('model', 'saaras:v3') // Latest model — supports 22 Indian languages + code-mixing
 
         const response = await fetch(`${SARVAM_BASE}/speech-to-text`, {
             method: 'POST',

@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom'
 import { Icon } from '@iconify/react'
 
 const API_BASE = '/api/voice'
-const SILENCE_THRESHOLD_MS = 1200 // 1.2 seconds of silence auto-sends message
-const VOLUME_THRESHOLD = 20 // Adjust based on mic noise floor
+const SILENCE_THRESHOLD_MS = 1500 // 1.5 seconds of silence after speech before auto-sending
+const VOLUME_THRESHOLD = 20 // Noise floor — prevents fan/AC from triggering
+const MIN_SPEECH_DURATION_MS = 1500 // Must record at least 1.5s before silence-detection can fire
 
 export default function VoiceAgent() {
     const { leadId } = useParams()
@@ -115,6 +116,10 @@ export default function VoiceAgent() {
 
     // Record audio with VAD (Voice Activity Detection)
     const startRecording = async () => {
+        // Guard: prevent double-invocation (fixes button flicker bug)
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') return
+        if (status === 'processing' || status === 'ended') return
+
         try {
             interruptAiPlayback() // Cut off the AI if they are talking
 
@@ -134,7 +139,8 @@ export default function VoiceAgent() {
 
                 const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
 
-                let isSilence = true
+                let hasSpoken = false // Has the user actually said anything?
+                const recordingStartTime = Date.now()
 
                 const checkAudioLevel = () => {
                     if (!analyserRef.current || mediaRecorder.state !== 'recording') return
@@ -145,17 +151,22 @@ export default function VoiceAgent() {
                     // Visual update
                     setVolumeLevel(averageVolume)
 
+                    const elapsedMs = Date.now() - recordingStartTime
+
                     // VAD logic
                     if (averageVolume > VOLUME_THRESHOLD) {
-                        if (isSilence) {
-                            isSilence = false
-                            // User started talking, clear silence timer
-                            if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+                        hasSpoken = true
+                        // User is actively speaking — clear any pending silence timer
+                        if (silenceTimerRef.current) {
+                            clearTimeout(silenceTimerRef.current)
+                            silenceTimerRef.current = null
                         }
                     } else {
-                        if (!isSilence) {
-                            isSilence = true
-                            // User stopped talking, start 4-second countdown
+                        // Silence detected — but ONLY trigger send if:
+                        // 1) User has actually spoken at some point
+                        // 2) Minimum recording duration has passed
+                        // 3) No timer is already running
+                        if (hasSpoken && elapsedMs > MIN_SPEECH_DURATION_MS && !silenceTimerRef.current) {
                             silenceTimerRef.current = setTimeout(() => {
                                 if (mediaRecorderRef.current?.state === 'recording') {
                                     stopRecording()
@@ -164,13 +175,12 @@ export default function VoiceAgent() {
                         }
                     }
 
-                    // Initial silence timer (if they click record but don't say anything for 5s)
-                    if (isSilence && !silenceTimerRef.current) {
-                        silenceTimerRef.current = setTimeout(() => {
-                            if (mediaRecorderRef.current?.state === 'recording') {
-                                stopRecording()
-                            }
-                        }, 5000)
+                    // Fallback: if they haven't spoken at all for 8 seconds, stop
+                    if (!hasSpoken && elapsedMs > 8000) {
+                        if (mediaRecorderRef.current?.state === 'recording') {
+                            stopRecording()
+                        }
+                        return
                     }
 
                     requestAnimationFrame(checkAudioLevel)
@@ -190,7 +200,7 @@ export default function VoiceAgent() {
                 await sendAudio(audioBlob)
             }
 
-            mediaRecorder.start()
+            mediaRecorder.start(250) // Collect data every 250ms for faster processing
             setStatus('recording')
         } catch (err) {
             console.error(err)
@@ -209,6 +219,14 @@ export default function VoiceAgent() {
     // Send recorded audio to backend
     const sendAudio = async (audioBlob) => {
         try {
+            // Skip very small audio blobs (< 1KB = likely silence/noise)
+            if (audioBlob.size < 1000) {
+                setStatus('ready')
+                // Auto-restart recording for the conversation loop
+                if (sessionId) setTimeout(() => startRecording(), 300)
+                return
+            }
+
             setStatus('processing')
             const formData = new FormData()
             formData.append('audio', audioBlob, 'audio.webm')
@@ -219,23 +237,43 @@ export default function VoiceAgent() {
                 method: 'POST',
                 body: formData
             })
-            if (!res.ok) throw new Error('Failed to process audio')
+
+            if (!res.ok) {
+                console.warn('[VoiceAgent] Server error:', res.status)
+                setStatus('ready')
+                // Don't break the loop — just restart recording
+                if (sessionId) setTimeout(() => startRecording(), 500)
+                return
+            }
+
             const data = await res.json()
+
+            // If STT returned empty text, silently restart recording
+            if (!data.userText && !data.aiText) {
+                setStatus('ready')
+                if (sessionId) setTimeout(() => startRecording(), 300)
+                return
+            }
 
             const newMessages = []
             if (data.userText) newMessages.push({ speaker: 'user', text: data.userText })
             if (data.aiText) newMessages.push({ speaker: 'ai', text: data.aiText })
             if (newMessages.length > 0) setMessages(prev => [...prev, ...newMessages])
 
-            // Play AI response audio
+            // Play AI response audio (auto-record triggers in onended callback)
             if (data.audioBase64) {
                 playBase64Audio(data.audioBase64)
+            } else {
+                // No audio to play — restart recording directly
+                if (sessionId) setTimeout(() => startRecording(), 300)
             }
 
             setStatus('ready')
         } catch (err) {
-            setError('Error processing your message')
+            console.warn('[VoiceAgent] Send error:', err.message)
             setStatus('ready')
+            // Don't break the conversation loop on transient errors
+            if (sessionId) setTimeout(() => startRecording(), 500)
         }
     }
 
@@ -280,6 +318,11 @@ export default function VoiceAgent() {
                 URL.revokeObjectURL(url)
                 if (currentAudioPlaybackRef.current === audio) {
                     currentAudioPlaybackRef.current = null
+                }
+                // AUTO-RECORD: Start listening again after AI finishes speaking
+                // Small delay to avoid picking up speaker echo
+                if (sessionId && status !== 'ended') {
+                    setTimeout(() => startRecording(), 400)
                 }
             }
         } catch (e) {
