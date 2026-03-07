@@ -6,7 +6,7 @@ const logSchema = new mongoose.Schema({
     action: String,
     status: {
         type: String,
-        enum: ['SENT', 'FAILED', 'PENDING', 'SKIPPED', 'OK', 'RETRYING', 'BOUNCED', 'RECEIVED', 'COMPLETED']
+        enum: ['SENT', 'FAILED', 'PENDING', 'SKIPPED', 'OK', 'RETRYING', 'BOUNCED', 'RECEIVED', 'COMPLETED', 'LOGGED', 'BLOCKED', 'SUCCESS']
     },
     detail: String,
     latencyMs: Number,
@@ -23,7 +23,7 @@ const logSchema = new mongoose.Schema({
         ],
         default: null
     },
-    channel: { type: String, enum: ['email', 'linkedin', 'voice', null], default: null },
+    channel: { type: String, enum: ['email', 'linkedin', 'voice', 'sms', 'whatsapp', 'phone', 'slack', 'crm', 'api', 'ai', 'system', 'form', 'telegram', null], default: null },
     direction: { type: String, enum: ['sent', 'received', null], default: null },
     subject: { type: String, default: null },
     body: { type: String, default: null },

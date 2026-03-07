@@ -2012,8 +2012,7 @@ body {
 .wf-ai-prompt-container {
   position: absolute;
   bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 16px;
   z-index: 20;
 }
 

@@ -355,8 +355,24 @@ export async function processMessage(sessionId, audioBuffer, language = 'hi-IN')
  */
 export async function endSession(sessionId) {
     const session = sessions.get(sessionId)
+
+    // Even if session is gone from memory, try to get/analyze from DB
     if (!session) {
-        return { sessionId, analysis: null, message: 'Session already ended or not found' }
+        const conv = await Conversation.findById(sessionId).lean()
+        if (!conv) {
+            return { sessionId, analysis: null, message: 'Conversation not found' }
+        }
+        // If already analyzed, return existing analysis
+        if (conv.analysis && conv.analysis.summary) {
+            return { sessionId, analysis: conv.analysis, message: 'Session already ended (returning cached analysis)' }
+        }
+        // Analyze from DB messages
+        const lead = conv.leadId ? await Lead.findById(conv.leadId).lean() : null
+        const analysis = await analyzeConversation(conv.messages || [], lead)
+        await Conversation.findByIdAndUpdate(sessionId, {
+            $set: { analysis, endTime: conv.endTime || new Date() }
+        })
+        return { sessionId, analysis, message: 'Session ended (analyzed from DB)' }
     }
 
     // Remove from active sessions
@@ -365,14 +381,37 @@ export async function endSession(sessionId) {
     // Get conversation from DB
     const conversation = await Conversation.findById(sessionId)
     if (!conversation) {
-        return { sessionId, analysis: null, message: 'Conversation record not found' }
+        // No DB record — analyze from in-memory chat history
+        const inMemMsgs = (session.chatHistory || [])
+            .filter(m => m.role !== 'system')
+            .map(m => ({ speaker: m.role === 'user' ? 'user' : 'ai', text: m.content }))
+        const analysis = await analyzeConversation(inMemMsgs, session.lead)
+        return { sessionId, analysis, message: 'Session ended (analyzed from memory)' }
     }
 
     // Mark end time
     conversation.endTime = new Date()
 
+    // Build the best possible transcript: merge in-memory chat history (richer) with DB messages
+    let messagesForAnalysis = conversation.messages || []
+
+    // If in-memory chat has more substance, build transcript from there
+    if (session.chatHistory && session.chatHistory.length > 2) {
+        const inMemoryMessages = session.chatHistory
+            .filter(m => m.role !== 'system')
+            .map(m => ({
+                speaker: m.role === 'user' ? 'user' : 'ai',
+                text: m.content
+            }))
+
+        // Use whichever has more messages
+        if (inMemoryMessages.length > messagesForAnalysis.length) {
+            messagesForAnalysis = inMemoryMessages
+        }
+    }
+
     // Analyze conversation using Groq (only Groq usage in entire file)
-    const analysis = await analyzeConversation(conversation.messages)
+    const analysis = await analyzeConversation(messagesForAnalysis, session.lead)
     conversation.analysis = analysis
     await conversation.save()
 
@@ -413,48 +452,178 @@ export async function endSession(sessionId) {
 /**
  * Analyze conversation transcript using Groq LLM (the ONLY Groq usage).
  */
-async function analyzeConversation(messages) {
+async function analyzeConversation(messages, lead = null) {
     if (!messages || messages.length === 0) {
         return { summary: 'No conversation recorded.', interestLevel: 'none', questions: [], sentiment: 'neutral', nextAction: 'no_action' }
     }
 
-    const transcript = messages.map(m => `${m.speaker === 'ai' ? 'AI' : 'User'}: ${m.text}`).join('\n')
+    // Build transcript — filter empty messages and format clearly
+    const transcript = messages
+        .filter(m => m.text && m.text.trim().length > 0)
+        .map(m => `${m.speaker === 'ai' ? 'AI Agent' : 'Lead'}: ${m.text.trim()}`)
+        .join('\n')
 
-    const systemPrompt = `You are an expert sales conversation analyst. Analyze this conversation transcript and respond ONLY with valid JSON matching this schema:
+    if (!transcript || transcript.length < 10) {
+        return { summary: 'Conversation was too short to analyze.', interestLevel: 'none', questions: [], sentiment: 'neutral', nextAction: 'no_action' }
+    }
+
+    // Build lead context for richer analysis
+    const leadContext = lead
+        ? `\nLead Info: ${lead.name || 'Unknown'}, ${lead.position || ''} at ${lead.company || 'Unknown company'}, Industry: ${lead.industry || 'unknown'}`
+        : ''
+
+    const systemPrompt = `You are an expert sales conversation analyst. You will analyze a conversation between an AI sales agent and a potential lead/customer.
+
+The conversation may be in English, Hindi, Hinglish (mix of Hindi and English), or any other language. Regardless of the language used, you MUST provide the analysis in English.${leadContext}
+
+Analyze the conversation and respond with ONLY a JSON object (no text before or after). Use this exact format:
+
 {
-  "summary": "A concise 2-3 sentence summary of what was discussed, the lead's mood, and any key points",
-  "interestLevel": "high" | "medium" | "low" | "none",
-  "questions": ["list of topics the user asked about"],
-  "sentiment": "positive" | "neutral" | "negative",
-  "nextAction": "schedule_demo" | "send_info" | "follow_up" | "nurture" | "no_action"
+  "summary": "Write a clear 2-3 sentence summary describing: what was discussed, how the lead responded, and the overall outcome of the conversation. Be specific — mention the lead's name if available, what product/feature they discussed, and their reaction.",
+  "interestLevel": "high",
+  "questions": ["specific topic 1 the lead asked about", "specific topic 2"],
+  "sentiment": "positive",
+  "nextAction": "schedule_demo"
 }
-Only respond with the JSON object, nothing else.`
+
+Rules for each field:
+- summary: MUST be 2-3 complete sentences. Be specific about what happened. Never say "No summary" or "Analysis unavailable".
+- interestLevel: Must be exactly one of: "high", "medium", "low", "none"
+  - high = lead asked for demo, pricing, or expressed clear buying intent
+  - medium = lead engaged with questions but no commitment
+  - low = lead was polite but clearly not interested
+  - none = no meaningful interaction
+- questions: Array of specific topics the lead asked about or discussed. Empty array [] if none.
+- sentiment: Must be exactly one of: "positive", "neutral", "negative"
+- nextAction: Must be exactly one of: "schedule_demo", "send_info", "follow_up", "nurture", "no_action"
+  - schedule_demo = lead wants a demo or meeting
+  - send_info = lead asked for more details/docs
+  - follow_up = lead is interested but needs time
+  - nurture = lead is lukewarm, needs nurturing
+  - no_action = lead declined or conversation was too short
+
+IMPORTANT: Respond with ONLY the JSON object. No markdown, no explanation, no code blocks.`
 
     try {
         const response = await getGroq().chat.completions.create({
             model: ANALYSIS_MODEL,
             messages: [
                 { role: 'system', content: systemPrompt },
-                { role: 'user', content: `Analyze this transcript:\n\n${transcript}` }
+                { role: 'user', content: `Here is the full conversation transcript to analyze:\n\n${transcript}` }
             ],
-            temperature: 0.3,
-            max_tokens: 400
+            temperature: 0.2,
+            max_tokens: 600
         })
 
-        const raw = response.choices[0]?.message?.content?.trim() || '{}'
-        const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-        const parsed = JSON.parse(cleaned)
+        const raw = response.choices[0]?.message?.content?.trim() || ''
+        console.log('[VoiceAgent] Raw Groq analysis response:', raw.slice(0, 300))
+
+        // Robust JSON extraction — try multiple strategies
+        let parsed = null
+
+        // Strategy 1: Direct parse
+        try {
+            parsed = JSON.parse(raw)
+        } catch { }
+
+        // Strategy 2: Strip markdown code blocks
+        if (!parsed) {
+            try {
+                const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+                parsed = JSON.parse(cleaned)
+            } catch { }
+        }
+
+        // Strategy 3: Find JSON object in the text
+        if (!parsed) {
+            try {
+                const jsonMatch = raw.match(/\{[\s\S]*\}/)
+                if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
+            } catch { }
+        }
+
+        if (parsed && parsed.summary) {
+            return {
+                summary: parsed.summary,
+                interestLevel: ['high', 'medium', 'low', 'none'].includes(parsed.interestLevel) ? parsed.interestLevel : 'none',
+                questions: Array.isArray(parsed.questions) ? parsed.questions : [],
+                sentiment: ['positive', 'neutral', 'negative'].includes(parsed.sentiment) ? parsed.sentiment : 'neutral',
+                nextAction: parsed.nextAction || 'no_action'
+            }
+        }
+
+        // If we got some response but couldn't parse it, use it as summary
+        if (raw.length > 20) {
+            console.warn('[VoiceAgent] Could not parse JSON, using raw text as summary')
+            return {
+                summary: raw.slice(0, 500),
+                interestLevel: 'none',
+                questions: [],
+                sentiment: 'neutral',
+                nextAction: 'follow_up'
+            }
+        }
+
+        // Fall through to rule-based fallback
+        throw new Error('Empty or unparseable response from Groq')
+
+    } catch (err) {
+        console.error('[VoiceAgent] Groq analysis error:', err.message)
+
+        // Rule-based fallback — generate a decent summary from the transcript itself
+        const userMessages = messages.filter(m => m.speaker === 'user').map(m => m.text.toLowerCase()).join(' ')
+        const aiMessages = messages.filter(m => m.speaker === 'ai').map(m => m.text).join(' ')
+        const leadName = lead?.name || 'The lead'
+        const msgCount = messages.length
+
+        // Detect interest keywords
+        const highInterest = /demo|pricing|price|cost|buy|purchase|subscribe|interested|sign up|schedule|meeting|call me/i.test(userMessages)
+        const lowInterest = /not interested|no thanks|busy|later|don't need|unsubscribe|stop/i.test(userMessages)
+        const hasQuestions = /\?|how|what|why|when|which|can you|tell me|does it/i.test(userMessages)
+
+        let interest = 'none'
+        let sentiment = 'neutral'
+        let nextAction = 'no_action'
+        let summaryParts = []
+
+        if (msgCount <= 2) {
+            summaryParts.push(`${leadName} had a very brief conversation with the AI agent.`)
+            summaryParts.push('The interaction was too short to determine any meaningful interest.')
+        } else if (highInterest) {
+            interest = 'high'
+            sentiment = 'positive'
+            nextAction = 'schedule_demo'
+            summaryParts.push(`${leadName} showed strong interest during the conversation.`)
+            summaryParts.push('They expressed intent to learn more or schedule a demo.')
+        } else if (lowInterest) {
+            interest = 'low'
+            sentiment = 'negative'
+            nextAction = 'nurture'
+            summaryParts.push(`${leadName} did not show interest in the offering.`)
+            summaryParts.push('They indicated they are not currently looking for this solution.')
+        } else if (hasQuestions) {
+            interest = 'medium'
+            sentiment = 'positive'
+            nextAction = 'follow_up'
+            summaryParts.push(`${leadName} engaged with the AI agent and asked questions about the product.`)
+            summaryParts.push('They showed moderate interest and may benefit from a follow-up.')
+        } else {
+            interest = 'low'
+            sentiment = 'neutral'
+            nextAction = 'nurture'
+            summaryParts.push(`${leadName} had a ${msgCount}-message conversation with the AI agent.`)
+            summaryParts.push('The conversation did not result in a clear next step.')
+        }
+
+        summaryParts.push(`Total messages exchanged: ${msgCount}.`)
 
         return {
-            summary: parsed.summary || 'No summary generated.',
-            interestLevel: parsed.interestLevel || 'none',
-            questions: Array.isArray(parsed.questions) ? parsed.questions : [],
-            sentiment: parsed.sentiment || 'neutral',
-            nextAction: parsed.nextAction || 'no_action'
+            summary: summaryParts.join(' '),
+            interestLevel: interest,
+            questions: hasQuestions ? ['product features', 'general inquiry'] : [],
+            sentiment,
+            nextAction
         }
-    } catch (err) {
-        console.error('[VoiceAgent] Analysis error:', err.message)
-        return { summary: 'Analysis unavailable.', interestLevel: 'none', questions: [], sentiment: 'neutral', nextAction: 'no_action' }
     }
 }
 

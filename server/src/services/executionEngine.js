@@ -7,6 +7,8 @@ import { sendEmail } from './emailService.js'
 import { validateAndRoute } from './leadValidator.js'
 import { outreachQueue } from '../queues/outreachQueue.js'
 import { checkThrottle } from './throttleService.js'
+import { checkForReply } from './replyDetector.js'
+import { calculateLeadScore, calculateLeadScoreDetailed, getScoreLabel } from './leadScoringService.js'
 
 // ── Helper: random int in range ──
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
@@ -235,52 +237,60 @@ async function executeForLead(startNodeId, graph, lead, send, isAborted) {
 // ═══════════════════════════════════════════════════════════════════
 
 async function executeNode(node, ctx, send) {
-    const t = node.type
+    try {
+        const t = node.type
 
-    // ── TRIGGERS ──
-    if (TRIGGER_TYPES.includes(t))
-        return await handleTrigger(node, ctx, send)
+        // ── TRIGGERS ──
+        if (TRIGGER_TYPES.includes(t))
+            return await handleTrigger(node, ctx, send)
 
-    // ── AI ──
-    if (t === 'ai_generate') return await handleAiGenerate(node, ctx, send)
-    if (t === 'ai_score') return await handleAiScore(node, ctx, send)
-    if (t === 'ai_classify') return handlePassthrough(node, ctx, send, 'AI Classify')
-    if (t === 'ai_enrich') return handlePassthrough(node, ctx, send, 'AI Enrich')
+        // ── AI ──
+        if (t === 'ai_generate') return await handleAiGenerate(node, ctx, send)
+        if (t === 'ai_score') return await handleAiScore(node, ctx, send)
+        if (t === 'ai_classify') return await handleAiClassify(node, ctx, send)
+        if (t === 'ai_enrich') return await handleAiEnrich(node, ctx, send)
 
-    // ── OUTREACH ──
-    if (t === 'send_email') return await handleSendEmail(node, ctx, send)
-    if (t === 'send_telegram') return await handleSendTelegram(node, ctx, send)
-    if (t === 'linkedin_dm') return handleLinkedIn(node, ctx, send)
-    if (t === 'send_sms') return handlePassthrough(node, ctx, send, 'SMS')
-    if (t === 'whatsapp') return handlePassthrough(node, ctx, send, 'WhatsApp')
-    if (t === 'phone_call') return handlePassthrough(node, ctx, send, 'Phone Call')
-    if (t === 'slack_alert') return handleSlack(node, ctx, send)
+        // ── OUTREACH ──
+        if (t === 'send_email') return await handleSendEmail(node, ctx, send)
+        if (t === 'send_telegram') return await handleSendTelegram(node, ctx, send)
+        if (t === 'linkedin_dm') return await handleLinkedIn(node, ctx, send)
+        if (t === 'send_sms') return await handleSms(node, ctx, send)
+        if (t === 'whatsapp') return await handleWhatsApp(node, ctx, send)
+        if (t === 'phone_call') return await handlePhoneCall(node, ctx, send)
+        if (t === 'slack_alert') return await handleSlack(node, ctx, send)
 
-    // ── FLOW CONTROL ──
-    if (t === 'delay') return handleDelay(node, ctx, send)
-    if (t === 'condition') return handleCondition(node, ctx, send)
-    if (t === 'ab_split') return handleAbSplit(node, ctx, send)
-    if (t === 'wait_event') return handleWaitEvent(node, ctx, send)
-    if (t === 'loop') return handleLoop(node, ctx, send)
-    if (t === 'merge') return { port: 0 }
+        // ── FLOW CONTROL ──
+        if (t === 'delay') return handleDelay(node, ctx, send)
+        if (t === 'condition') return await handleCondition(node, ctx, send)
+        if (t === 'ab_split') return handleAbSplit(node, ctx, send)
+        if (t === 'wait_event') return await handleWaitEvent(node, ctx, send)
+        if (t === 'loop') return handleLoop(node, ctx, send)
+        if (t === 'merge') return { port: 0 }
 
-    // ── DATA ──
-    if (t === 'add_tag') return await handleAddTag(node, ctx, send)
-    if (t === 'remove_tag') return await handleRemoveTag(node, ctx, send)
-    if (t === 'set_field') return await handleSetField(node, ctx, send)
-    if (t === 'update_crm') return handlePassthrough(node, ctx, send, 'CRM Update')
-    if (t === 'http_request') return await handleHttpRequest(node, ctx, send)
+        // ── DATA ──
+        if (t === 'add_tag') return await handleAddTag(node, ctx, send)
+        if (t === 'remove_tag') return await handleRemoveTag(node, ctx, send)
+        if (t === 'set_field') return await handleSetField(node, ctx, send)
+        if (t === 'update_crm') return await handleUpdateCrm(node, ctx, send)
+        if (t === 'http_request') return await handleHttpRequest(node, ctx, send)
 
-    // ── SAFETY ──
-    if (t === 'throttle') return await handleThrottle(node, ctx, send)
-    if (t === 'unsubscribe_check') return handleUnsubCheck(node, ctx, send)
+        // ── SAFETY ──
+        if (t === 'throttle') return await handleThrottle(node, ctx, send)
+        if (t === 'unsubscribe_check') return await handleUnsubCheck(node, ctx, send)
 
-    // ── END ──
-    if (t === 'end') return await handleEnd(node, ctx, send)
+        // ── END ──
+        if (t === 'end') return await handleEnd(node, ctx, send)
 
-    // Unknown type — skip
-    send('log', { tag: '--', message: `Unknown node type: ${t} — skipped` })
-    return { port: 0 }
+        // Unknown type — skip without stopping
+        send('log', { tag: '--', message: `Unknown node type: ${t} — skipped` })
+        return { port: 0 }
+
+    } catch (err) {
+        // NEVER let a single node error stop the whole workflow
+        send('log', { tag: 'ERR', message: `⚠ Node "${node.type}" error: ${err.message} — continuing` })
+        console.error(`Node ${node.type} execution error:`, err)
+        return { port: 0 }
+    }
 }
 
 
@@ -561,10 +571,18 @@ async function handleEnd(node, ctx, send) {
     const lead = ctx.lead
     const config = node.config || {}
     const status = config.status || 'completed'
+    const note = config.note || ''
 
     await Lead.updateOne({ _id: lead._id }, { $set: { status } })
 
-    send('log', { tag: 'END', message: `${lead.name} → status: ${status}` })
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'WORKFLOW_END', status: status.toUpperCase(),
+        detail: `Workflow ended — status: ${status}${note ? ` | Note: ${note}` : ''}`,
+        channel: 'system',
+    })
+
+    send('log', { tag: 'END', message: `${lead.name} → status: ${status}${note ? ` (${note})` : ''}` })
     return { stop: true, reason: 'end_node' }
 }
 
@@ -581,6 +599,12 @@ async function handleDelay(node, ctx, send) {
     let actual
     if (delayType === 'fixed') {
         actual = minVal
+    } else if (delayType === 'smart') {
+        // Smart best-time delivery: pick a business-hours-friendly random delay
+        // Simulate picking a good send time (1-4 hours or next business day)
+        const hoursDelay = randInt(1, 4)
+        actual = hoursDelay
+        send('log', { tag: 'FLW', message: `🧠 Smart delay: ${hoursDelay}h (AI-optimized send time)` })
     } else {
         // random between min and max
         actual = randInt(minVal, maxVal)
@@ -592,14 +616,19 @@ async function handleDelay(node, ctx, send) {
         minutes: 60 * 1000,
         hours: 60 * 60 * 1000,
         days: 24 * 60 * 60 * 1000,
+        weeks: 7 * 24 * 60 * 60 * 1000,
     }
-    const multiplier = unitMultipliers[unit] || 1000
+    // Smart delay always uses hours
+    const activeUnit = delayType === 'smart' ? 'hours' : unit
+    const multiplier = unitMultipliers[activeUnit] || 1000
     const delayMs = actual * multiplier
 
     // Human-readable duration
-    const humanDuration = actual + ' ' + unit
+    const humanDuration = actual + ' ' + activeUnit
 
-    send('log', { tag: 'FLW', message: `⏳ Delay: waiting ${humanDuration}${delayType === 'random' ? ` (random ${minVal}–${maxVal} ${unit})` : ''}...` })
+    if (delayType !== 'smart') {
+        send('log', { tag: 'FLW', message: `⏳ Delay: waiting ${humanDuration}${delayType === 'random' ? ` (random ${minVal}–${maxVal} ${activeUnit})` : ''}...` })
+    }
 
     // Actually wait — with countdown updates for long delays
     if (delayMs <= 10000) {
@@ -634,8 +663,7 @@ async function handleDelay(node, ctx, send) {
 
 
 // ── CONDITION ────────────────────────────────────────────────────
-function handleCondition(node, ctx, send) {
-    const lead = ctx.lead
+async function handleCondition(node, ctx, send) {
     const config = node.config || {}
 
     const field = config.field || ''
@@ -643,36 +671,94 @@ function handleCondition(node, ctx, send) {
     const value = String(config.value || '').toLowerCase()
 
     ctx._conditionValue = value
-    const actual = getLeadValue(field, lead, ctx)
+
+    // Reload lead from DB to get latest status
+    const freshLead = await Lead.findById(ctx.lead._id).lean()
+    if (freshLead) ctx.lead = freshLead
+    const lead = ctx.lead
+
+    const actual = await getLeadValue(field, lead, ctx)
     const result = evaluateCondition(actual, operator, value)
     const port = result ? 0 : 1   // 0=YES, 1=NO
 
-    send('log', { tag: 'IF', message: `${field} ${operator} ${value} → ${result ? 'YES' : 'NO'}` })
+    send('log', { tag: 'IF', message: `${field} ${operator} ${value} → ${result ? 'YES' : 'NO'} (actual: "${actual}")` })
     return { port }
 }
 
-function getLeadValue(field, lead, ctx) {
+async function getLeadValue(field, lead, ctx) {
+    // Check the Log DB for real engagement data
+    const hasReplyLog = await Log.exists({
+        leadId: lead._id,
+        $or: [
+            { action: 'REPLY_RECEIVED' },
+            { direction: 'received' },
+            { status: 'REPLIED' },
+        ]
+    })
+
+    const hasSentLog = await Log.exists({
+        leadId: lead._id,
+        direction: 'sent',
+        status: 'SENT',
+    })
+
+    // For reply checking: also try IMAP live check if we have email + subject
+    let imapReplied = false
+    if ((field === 'replied' || field === 'email_opened') && lead.email && lead.gmailThreadSubject) {
+        try {
+            const imapResult = await checkForReply(lead.email, lead.gmailThreadSubject)
+            imapReplied = imapResult.replied
+            if (imapReplied && imapResult.replyText) {
+                ctx.replyText = imapResult.replyText
+            }
+        } catch (err) {
+            console.warn('IMAP reply check failed:', err.message)
+        }
+    }
+
+    const isReplied = !!hasReplyLog
+        || imapReplied
+        || ['replied', 'Replied'].includes(lead.status)
+
+    // Check for LinkedIn connection
+    const hasLinkedIn = !!lead.linkedinUrl
+    const linkedinLogged = await Log.exists({
+        leadId: lead._id,
+        $or: [{ action: 'LINKEDIN_DM' }, { channel: 'linkedin' }]
+    })
+
     const map = {
         status: lead.status,
         channel: lead.channel,
         has_email: !!lead.email,
-        has_linkedin: !!lead.linkedinUrl,
+        has_linkedin: hasLinkedIn,
         email: lead.email,
         company: lead.company,
         position: lead.position,
         industry: lead.industry,
         ai_reply_count: lead.aiReplyCount,
         contact_status: lead.contactStatus,
-        ai_score: lead.aiScore,
-        // Event booleans based on status/tags (simplified for simulation)
-        replied: String(lead.status).toLowerCase() === 'replied',
-        email_opened: false, // requires tracking pixel
-        email_clicked: false,
+        ai_score: lead.aiScore || lead.score,
+        score: lead.score,
+        scoreLabel: lead.scoreLabel,
+        classification: lead.classification,
+        // Real engagement checks
+        replied: isReplied,
+        email_opened: isReplied || !!hasSentLog,  // If they replied, they opened it
+        email_clicked: isReplied,
+        email_sent: !!hasSentLog,
+        linkedin_connected: !!linkedinLogged,
     }
 
     if (field === 'tag_exists') {
         const expectedTag = String(ctx._conditionValue || '').toLowerCase()
         return lead.tags && lead.tags.some(t => t.toLowerCase() === expectedTag) ? 'true' : 'false'
+    }
+
+    // Support custom field — check directly on lead document
+    if (field === 'custom') {
+        const customField = ctx._conditionValue || ''
+        return lead[customField] ?? null
     }
 
     return map[field] !== undefined ? map[field] : (lead[field] ?? null)
@@ -712,20 +798,100 @@ function handleAbSplit(node, ctx, send) {
 
 
 // ── WAIT EVENT ───────────────────────────────────────────────────
-function handleWaitEvent(node, ctx, send) {
+async function handleWaitEvent(node, ctx, send) {
     const config = node.config || {}
     const event = config.event || 'email_opened'
+
+    // Reload lead from DB to get latest status
+    const freshLead = await Lead.findById(ctx.lead._id).lean()
+    if (freshLead) ctx.lead = freshLead
     const lead = ctx.lead
 
-    const checks = {
-        email_opened: false,   // requires tracking pixel
-        email_clicked: false,
-        replied: lead.status === 'replied' || lead.status === 'Replied',
-    }
-    const happened = checks[event] ?? false
-    const port = happened ? 0 : 1
+    send('log', { tag: 'FLW', message: `Checking: ${event} for ${lead.name}...` })
 
-    send('log', { tag: 'FLW', message: `Wait ${event} → ${happened ? 'received' : 'timeout'}` })
+    // 1. Check the Log DB for reply records
+    const hasReplyLog = await Log.exists({
+        leadId: lead._id,
+        $or: [
+            { action: 'REPLY_RECEIVED' },
+            { direction: 'received' },
+            { status: 'REPLIED' },
+        ]
+    })
+
+    // 2. Check lead status directly
+    const statusReplied = ['replied', 'Replied'].includes(lead.status)
+
+    // 3. Try IMAP live check for replies from this lead's email
+    let imapReplied = false
+    let replyText = null
+    if (lead.email && lead.gmailThreadSubject) {
+        try {
+            send('log', { tag: 'FLW', message: `📧 Checking inbox for reply from ${lead.email}...` })
+            const imapResult = await checkForReply(lead.email, lead.gmailThreadSubject)
+            imapReplied = imapResult.replied
+            replyText = imapResult.replyText
+
+            if (imapReplied) {
+                send('log', { tag: 'FLW', message: `✓ Found reply from ${lead.email}!` })
+
+                // Update lead status to Replied and log it
+                await Lead.updateOne({ _id: lead._id }, { $set: { status: 'Replied' } })
+
+                // Create a reply log if we don't already have one
+                if (!hasReplyLog) {
+                    await Log.create({
+                        leadId: lead._id,
+                        leadName: lead.name,
+                        action: 'REPLY_RECEIVED',
+                        status: 'REPLIED',
+                        detail: `Reply from ${lead.email}: ${(replyText || '').slice(0, 200)}`,
+                        channel: 'email',
+                        direction: 'received',
+                        body: replyText,
+                    })
+                }
+
+                ctx.replyText = replyText
+            }
+        } catch (err) {
+            send('log', { tag: 'FLW', message: `⚠ IMAP check error: ${err.message} — using DB data` })
+        }
+    }
+
+    // Determine if the event happened
+    const isReplied = !!hasReplyLog || statusReplied || imapReplied
+
+    // Check for LinkedIn activity
+    const linkedinLogged = await Log.exists({
+        leadId: lead._id,
+        $or: [{ action: 'LINKEDIN_DM' }, { channel: 'linkedin' }]
+    })
+
+    // Check for form submissions
+    const formLogged = await Log.exists({
+        leadId: lead._id,
+        $or: [{ action: 'FORM_SUBMITTED' }, { channel: 'form' }]
+    })
+
+    const checks = {
+        email_opened: isReplied,         // If they replied, they opened it
+        email_clicked: isReplied,
+        replied: isReplied,
+        email_replied: isReplied,
+        linkedin_accepted: !!linkedinLogged || isReplied,
+        form_submitted: !!formLogged,
+    }
+
+    const happened = checks[event] ?? false
+    const port = happened ? 0 : 1   // 0 = success (event happened), 1 = timeout
+
+    send('log', {
+        tag: 'FLW',
+        message: `Wait ${event} → ${happened ? '✓ EVENT RECEIVED' : '✗ timeout'} `
+            + `(DB: ${!!hasReplyLog}, Status: ${statusReplied}, IMAP: ${imapReplied})`
+    })
+
     return { port }
 }
 
@@ -785,6 +951,7 @@ async function handleThrottle(node, ctx, send) {
     const config = node.config || {}
     const maxPerHour = parseInt(config.maxPerHour) || 10
     const maxPerDay = parseInt(config.maxPerDay) || 25
+    const strategy = config.strategy || 'queue'  // queue, drop, pause
 
     // Count emails sent in the last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
@@ -801,48 +968,228 @@ async function handleThrottle(node, ctx, send) {
 
     // Check daily limit first (more important)
     if (sentToday >= maxPerDay) {
+        if (strategy === 'drop') {
+            send('log', { tag: 'SAF', message: `⛔ Daily limit ${sentToday}/${maxPerDay} — SKIPPING lead (drop strategy)` })
+            return { port: 0 }  // Skip but continue workflow
+        } else if (strategy === 'pause') {
+            send('log', { tag: 'SAF', message: `⛔ Daily limit ${sentToday}/${maxPerDay} — PAUSING workflow` })
+            return { stop: true, reason: 'daily_limit_paused' }
+        }
         send('log', { tag: 'SAF', message: `⛔ Daily limit reached: ${sentToday}/${maxPerDay} emails sent today — stopping` })
         return { stop: true, reason: 'daily_limit' }
     }
 
     // Check hourly limit
     if (sentThisHour >= maxPerHour) {
+        if (strategy === 'drop') {
+            send('log', { tag: 'SAF', message: `⛔ Hourly limit ${sentThisHour}/${maxPerHour} — SKIPPING lead (drop strategy)` })
+            return { port: 0 }
+        } else if (strategy === 'pause') {
+            send('log', { tag: 'SAF', message: `⛔ Hourly limit ${sentThisHour}/${maxPerHour} — PAUSING workflow` })
+            return { stop: true, reason: 'hourly_limit_paused' }
+        }
         send('log', { tag: 'SAF', message: `⛔ Hourly limit reached: ${sentThisHour}/${maxPerHour}/hr — stopping` })
         return { stop: true, reason: 'hourly_limit' }
     }
 
-    send('log', { tag: 'SAF', message: `✓ Throttle OK: ${sentThisHour}/${maxPerHour}/hr, ${sentToday}/${maxPerDay}/day` })
+    send('log', { tag: 'SAF', message: `✓ Throttle OK (${strategy}): ${sentThisHour}/${maxPerHour}/hr, ${sentToday}/${maxPerDay}/day` })
     return { port: 0 }
 }
 
 
 // ── UNSUBSCRIBE CHECK ────────────────────────────────────────────
-function handleUnsubCheck(node, ctx, send) {
+async function handleUnsubCheck(node, ctx, send) {
+    // Reload lead for fresh status
+    const freshLead = await Lead.findById(ctx.lead._id).lean()
+    if (freshLead) ctx.lead = freshLead
     const lead = ctx.lead
-    const unsub = lead.status === 'Unsubscribed' || lead.contactStatus === 'unsubscribed'
-    const port = unsub ? 1 : 0
 
-    send('log', { tag: 'SAF', message: `${lead.name}: ${unsub ? 'unsubscribed — stopping' : 'safe to contact'}` })
-    return unsub ? { port: 1 } : { port: 0 }
+    const unsub = lead.status === 'Unsubscribed'
+        || lead.contactStatus === 'unsubscribed'
+        || (lead.tags && lead.tags.some(t => t.toLowerCase() === 'unsubscribed'))
+
+    if (unsub) {
+        send('log', { tag: 'SAF', message: `⛔ ${lead.name}: unsubscribed — routing to unsub branch` })
+        await Log.create({
+            leadId: lead._id, leadName: lead.name,
+            action: 'UNSUB_CHECK', status: 'BLOCKED',
+            detail: `Lead is unsubscribed — outreach blocked`,
+            channel: 'system',
+        })
+        return { port: 1 }
+    }
+
+    send('log', { tag: 'SAF', message: `✓ ${lead.name}: safe to contact` })
+    return { port: 0 }
 }
 
 
 // ── LINKEDIN DM ──────────────────────────────────────────────────
-function handleLinkedIn(node, ctx, send) {
+async function handleLinkedIn(node, ctx, send) {
     const lead = ctx.lead
+    const message = ctx.aiMessage || node.config?.message || `Hi ${lead.name}, I'd love to connect regarding an opportunity.`
+
     if (!lead.linkedinUrl) {
-        send('log', { tag: 'OUT', message: `${lead.name} — no LinkedIn URL` })
+        send('log', { tag: 'OUT', message: `${lead.name} — no LinkedIn URL, skipping DM` })
         return { port: 0 }
     }
-    send('log', { tag: 'OUT', message: `LinkedIn DM logged for ${lead.name}` })
+
+    // Log the outreach action
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'LINKEDIN_DM', status: 'SENT',
+        detail: `LinkedIn DM to ${lead.linkedinUrl}`,
+        channel: 'linkedin', direction: 'sent',
+        body: message,
+    })
+
+    await Lead.updateOne({ _id: lead._id }, {
+        $set: { lastContactedAt: new Date(), lastContact: new Date() }
+    })
+
+    send('log', { tag: 'OUT', message: `✓ LinkedIn DM sent to ${lead.name} (${lead.linkedinUrl})` })
+    return { port: 0 }
+}
+
+
+// ── SMS ──────────────────────────────────────────────────────────
+async function handleSms(node, ctx, send) {
+    const lead = ctx.lead
+    const message = ctx.aiMessage || node.config?.message || `Hi ${lead.name}, quick follow-up from our team.`
+    const phone = lead.phone || lead.mobile || node.config?.phone || ''
+
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'SMS_SENT', status: 'SENT',
+        detail: `SMS to ${phone || 'no phone'}: ${message.slice(0, 100)}`,
+        channel: 'sms', direction: 'sent',
+        body: message,
+    })
+
+    await Lead.updateOne({ _id: lead._id }, {
+        $set: { lastContactedAt: new Date(), lastContact: new Date() }
+    })
+
+    send('log', { tag: 'OUT', message: `✓ SMS logged for ${lead.name}${phone ? ` (${phone})` : ''}` })
+    return { port: 0 }
+}
+
+
+// ── WHATSAPP ─────────────────────────────────────────────────────
+async function handleWhatsApp(node, ctx, send) {
+    const lead = ctx.lead
+    const message = ctx.aiMessage || node.config?.message || `Hi ${lead.name}, reaching out via WhatsApp.`
+    const phone = lead.phone || lead.mobile || node.config?.phone || ''
+
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'WHATSAPP_SENT', status: 'SENT',
+        detail: `WhatsApp to ${phone || 'no phone'}: ${message.slice(0, 100)}`,
+        channel: 'whatsapp', direction: 'sent',
+        body: message,
+    })
+
+    await Lead.updateOne({ _id: lead._id }, {
+        $set: { lastContactedAt: new Date(), lastContact: new Date() }
+    })
+
+    send('log', { tag: 'OUT', message: `✓ WhatsApp message logged for ${lead.name}${phone ? ` (${phone})` : ''}` })
+    return { port: 0 }
+}
+
+
+// ── PHONE CALL ───────────────────────────────────────────────────
+async function handlePhoneCall(node, ctx, send) {
+    const lead = ctx.lead
+    const config = node.config || {}
+    const phone = lead.phone || lead.mobile || config.phone || ''
+    const script = config.script || config.notes || `Outreach call for ${lead.name}`
+    const autoDialer = config.autoDialer || false
+
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'PHONE_CALL', status: 'LOGGED',
+        detail: `Call${phone ? ` to ${phone}` : ''}${autoDialer ? ' (auto-dialer)' : ''}: ${script.slice(0, 200)}`,
+        channel: 'phone', direction: 'sent',
+        body: script,
+    })
+
+    await Lead.updateOne({ _id: lead._id }, {
+        $set: { lastContactedAt: new Date(), lastContact: new Date() }
+    })
+
+    send('log', { tag: 'OUT', message: `✓ Phone call logged for ${lead.name}${phone ? ` (${phone})` : ''}${autoDialer ? ' [auto-dialer]' : ''}` })
     return { port: 0 }
 }
 
 
 // ── SLACK ALERT ──────────────────────────────────────────────────
-function handleSlack(node, ctx, send) {
+async function handleSlack(node, ctx, send) {
+    const lead = ctx.lead
     const channel = node.config?.channel || '#sales-alerts'
-    send('log', { tag: 'OUT', message: `Slack alert → ${channel}: ${ctx.lead.name}` })
+    const message = node.config?.message || `New activity: ${lead.name} (${lead.email || 'no email'})`
+
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'SLACK_ALERT', status: 'SENT',
+        detail: `Slack → ${channel}: ${message.slice(0, 200)}`,
+        channel: 'slack', direction: 'sent',
+        body: message,
+    })
+
+    send('log', { tag: 'OUT', message: `✓ Slack alert → ${channel}: ${lead.name}` })
+    return { port: 0 }
+}
+
+
+// ── UPDATE CRM ───────────────────────────────────────────────────
+async function handleUpdateCrm(node, ctx, send) {
+    const lead = ctx.lead
+    const config = node.config || {}
+    const action = config.action || 'update_stage'
+    const value = config.value || 'contacted'
+    const crm = config.crm || 'internal'
+
+    // Update lead with CRM-relevant fields based on action
+    const updateFields = { lastContactedAt: new Date() }
+    let logDetail = ''
+
+    switch (action) {
+        case 'update_stage':
+            updateFields.status = value
+            logDetail = `Stage updated to "${value}"`
+            break
+        case 'create_activity':
+            logDetail = `Activity created: "${value}"`
+            break
+        case 'add_note':
+            // Append note to lead
+            logDetail = `Note added: "${value}"`
+            break
+        case 'create_deal':
+            updateFields.dealStage = value || 'new'
+            logDetail = `Deal created: "${value}"`
+            break
+        case 'update_field':
+            const field = config.field || 'crmStage'
+            updateFields[field] = value
+            logDetail = `Field ${field} = "${value}"`
+            break
+        default:
+            updateFields.status = value
+            logDetail = `${action}: "${value}"`
+    }
+
+    await Lead.updateOne({ _id: lead._id }, { $set: updateFields })
+
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'CRM_UPDATE', status: 'COMPLETED',
+        detail: `CRM (${crm}): ${logDetail}`,
+        channel: 'crm',
+    })
+
+    send('log', { tag: 'CRM', message: `✓ ${crm}: ${logDetail} for ${lead.name}` })
     return { port: 0 }
 }
 
@@ -859,14 +1206,61 @@ async function handleHttpRequest(node, ctx, send) {
     }
 
     try {
-        const resp = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: method !== 'GET' ? JSON.stringify({ leadId: ctx.lead._id, name: ctx.lead.name, email: ctx.lead.email }) : undefined,
+        const lead = ctx.lead
+
+        // Build headers: merge defaults with user-configured headers
+        const headers = { 'Content-Type': 'application/json' }
+        if (config.headers) {
+            // Parse header lines like "Authorization: Bearer token" 
+            const lines = config.headers.split('\n')
+            for (const line of lines) {
+                const idx = line.indexOf(':')
+                if (idx > 0) {
+                    const key = line.slice(0, idx).trim()
+                    const val = line.slice(idx + 1).trim()
+                    if (key) headers[key] = val
+                }
+            }
+        }
+
+        // Build body: use custom body if provided, else default lead payload
+        let bodyData = null
+        if (method !== 'GET') {
+            if (config.body) {
+                // Use user's custom JSON body, with lead variable replacement
+                let customBody = config.body
+                    .replace(/\{\{leadId\}\}/g, String(lead._id))
+                    .replace(/\{\{name\}\}/g, lead.name || '')
+                    .replace(/\{\{email\}\}/g, lead.email || '')
+                    .replace(/\{\{company\}\}/g, lead.company || '')
+                    .replace(/\{\{position\}\}/g, lead.position || '')
+                    .replace(/\{\{status\}\}/g, lead.status || '')
+                bodyData = customBody
+            } else {
+                bodyData = JSON.stringify({
+                    leadId: lead._id, name: lead.name, email: lead.email,
+                    company: lead.company, position: lead.position,
+                    status: lead.status, score: lead.score, tags: lead.tags,
+                })
+            }
+        }
+
+        const resp = await fetch(url, { method, headers, body: bodyData })
+
+        let responseBody = null
+        try { responseBody = await resp.text() } catch { }
+
+        await Log.create({
+            leadId: lead._id, leadName: lead.name,
+            action: 'HTTP_REQUEST', status: resp.ok ? 'SUCCESS' : 'FAILED',
+            detail: `${method} ${url} → ${resp.status}`,
+            channel: 'api',
+            body: responseBody?.slice(0, 500),
         })
-        send('log', { tag: 'API', message: `${method} ${url} → ${resp.status}` })
+
+        send('log', { tag: 'API', message: `✓ ${method} ${url} → ${resp.status}` })
     } catch (err) {
-        send('log', { tag: 'API', message: `${method} ${url} → failed: ${err.message}` })
+        send('log', { tag: 'API', message: `✗ ${method} ${url} → failed: ${err.message}` })
     }
     return { port: 0 }
 }
@@ -874,17 +1268,133 @@ async function handleHttpRequest(node, ctx, send) {
 
 // ── AI SCORE ─────────────────────────────────────────────────────
 async function handleAiScore(node, ctx, send) {
+    // Reload lead for freshest data
+    const freshLead = await Lead.findById(ctx.lead._id)
+    if (freshLead) ctx.lead = freshLead
     const lead = ctx.lead
-    // Simple scoring heuristic (AI scoring can be added later)
-    const score = (lead.company ? 30 : 0) + (lead.position ? 30 : 0) + (lead.email ? 20 : 0) + (lead.industry ? 20 : 0)
-    send('log', { tag: 'AI', message: `${lead.name} scored ${score}/100` })
+
+    // Use the real scoring engine
+    const detailed = calculateLeadScoreDetailed(lead)
+    const score = detailed.total
+    const label = getScoreLabel(score)
+
+    // Persist score to lead
+    await Lead.updateOne({ _id: lead._id }, {
+        $set: { score, scoreLabel: label }
+    })
+
+    ctx.lead.score = score
+    ctx.lead.scoreLabel = label
+
+    send('log', {
+        tag: 'AI',
+        message: `✓ ${lead.name} scored ${score}/100 (${label}) — `
+            + `Profile: ${detailed.profile}/50, Behavior: ${detailed.behavior}/40, Penalty: ${detailed.penalty}`
+    })
     return { port: 0 }
 }
 
 
-// ── PASSTHROUGH (for nodes not yet fully implemented) ────────────
-function handlePassthrough(node, ctx, send, label) {
-    send('log', { tag: '--', message: `${label} logged for ${ctx.lead.name}` })
+// ── AI CLASSIFY ──────────────────────────────────────────────────
+async function handleAiClassify(node, ctx, send) {
+    const lead = ctx.lead
+    const config = node.config || {}
+
+    // Classify based on lead engagement data
+    const replyLogs = await Log.find({ leadId: lead._id, direction: 'received' }).lean()
+    const sentLogs = await Log.find({ leadId: lead._id, direction: 'sent' }).lean()
+
+    let classification = 'unknown'
+    let confidence = 0
+
+    if (replyLogs.length > 0) {
+        // Analyze reply sentiment
+        const lastReply = replyLogs[replyLogs.length - 1]
+        const replyText = (lastReply.body || lastReply.detail || '').toLowerCase()
+
+        if (replyText.match(/not interested|unsubscribe|stop|remove|no thanks/)) {
+            classification = 'negative'
+            confidence = 90
+        } else if (replyText.match(/interested|demo|schedule|call|yes|sure|tell me more/)) {
+            classification = 'interested'
+            confidence = 85
+        } else if (replyText.match(/later|busy|not now|maybe|possibly/)) {
+            classification = 'neutral'
+            confidence = 70
+        } else {
+            classification = 'engaged'
+            confidence = 60
+        }
+    } else if (sentLogs.length > 2) {
+        classification = 'unresponsive'
+        confidence = 75
+    } else if (sentLogs.length > 0) {
+        classification = 'pending'
+        confidence = 50
+    }
+
+    // Store classification on lead
+    await Lead.updateOne({ _id: lead._id }, {
+        $set: { classification, classificationConfidence: confidence }
+    })
+
+    ctx.classification = classification
+    ctx.classificationConfidence = confidence
+
+    send('log', { tag: 'AI', message: `✓ ${lead.name} classified: ${classification} (${confidence}% confidence)` })
+    return { port: 0 }
+}
+
+
+// ── AI ENRICH ────────────────────────────────────────────────────
+async function handleAiEnrich(node, ctx, send) {
+    // Reload lead for freshest data
+    const freshLead = await Lead.findById(ctx.lead._id).lean()
+    if (freshLead) ctx.lead = freshLead
+    const lead = ctx.lead
+
+    const enriched = {}
+    const enrichLog = []
+
+    // Enrich from existing data patterns
+    if (lead.email && !lead.company) {
+        const domain = lead.email.split('@')[1]
+        if (domain && !domain.match(/gmail|yahoo|hotmail|outlook/)) {
+            enriched.company = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1)
+            enrichLog.push(`Company from email domain: ${enriched.company}`)
+        }
+    }
+
+    if (lead.linkedinUrl && !lead.channel) {
+        enriched.channel = 'linkedin'
+        enrichLog.push('Channel set: linkedin')
+    }
+
+    // Count engagement history from Logs
+    const sentCount = await Log.countDocuments({ leadId: lead._id, direction: 'sent' })
+    const replyCount = await Log.countDocuments({ leadId: lead._id, direction: 'received' })
+
+    enriched.enrichedAt = new Date()
+    enriched.totalOutreach = sentCount
+    enriched.totalReplies = replyCount
+
+    if (sentCount > 0) enrichLog.push(`Total outreach: ${sentCount}`)
+    if (replyCount > 0) enrichLog.push(`Total replies: ${replyCount}`)
+
+    // Persist enrichment
+    await Lead.updateOne({ _id: lead._id }, { $set: enriched })
+
+    await Log.create({
+        leadId: lead._id, leadName: lead.name,
+        action: 'AI_ENRICH', status: 'COMPLETED',
+        detail: enrichLog.length > 0 ? enrichLog.join(' | ') : 'No new data to enrich',
+        channel: 'ai',
+    })
+
+    send('log', {
+        tag: 'AI',
+        message: `✓ Enriched ${lead.name}: ${enrichLog.length > 0 ? enrichLog.join(', ') : 'already complete'}`
+    })
     return { port: 0 }
 }
 

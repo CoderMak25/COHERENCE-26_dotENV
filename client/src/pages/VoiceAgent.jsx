@@ -290,12 +290,53 @@ export default function VoiceAgent() {
                 body: JSON.stringify({ sessionId })
             })
             const data = await res.json()
-            setAnalysis(data.analysis)
+
+            // Always try to set analysis
+            if (data.analysis) {
+                setAnalysis(data.analysis)
+            } else {
+                // Fallback: build a basic summary from the chat on the client side
+                setAnalysis(buildClientSideSummary(messages))
+            }
             setScoreUpdate(data.scoreUpdate)
             setStatus('ended')
         } catch (err) {
+            // Even on error, generate a summary from whatever we have
+            setAnalysis(buildClientSideSummary(messages))
             setStatus('ended')
         }
+    }
+
+    // Client-side fallback summary when the backend can't analyze
+    const buildClientSideSummary = (msgs) => {
+        const userMsgs = msgs.filter(m => m.speaker === 'user')
+        const aiMsgs = msgs.filter(m => m.speaker === 'ai')
+        const totalMsgs = msgs.length
+
+        if (totalMsgs <= 1) {
+            return {
+                summary: `The conversation was very brief with ${totalMsgs} message(s). No meaningful exchange occurred.`,
+                interestLevel: 'none', sentiment: 'neutral', nextAction: 'no_action', questions: []
+            }
+        }
+
+        const userText = userMsgs.map(m => m.text.toLowerCase()).join(' ')
+        const highInterest = /demo|pricing|interested|sign up|schedule|yes|sure|tell me more|how much/i.test(userText)
+        const lowInterest = /not interested|no thanks|busy|later|stop|bye/i.test(userText)
+
+        let summary, interest, sentiment, nextAction
+        if (highInterest) {
+            interest = 'high'; sentiment = 'positive'; nextAction = 'schedule_demo'
+            summary = `The lead engaged actively in the conversation with ${totalMsgs} messages. They showed strong interest and may be ready for a demo or follow-up.`
+        } else if (lowInterest) {
+            interest = 'low'; sentiment = 'negative'; nextAction = 'nurture'
+            summary = `The lead participated in a ${totalMsgs}-message conversation but did not show strong interest. They may need nurturing over time.`
+        } else {
+            interest = 'medium'; sentiment = 'neutral'; nextAction = 'follow_up'
+            summary = `The lead had a ${totalMsgs}-message conversation with the AI agent. The interaction suggests moderate engagement that warrants a follow-up.`
+        }
+
+        return { summary, interestLevel: interest, sentiment, nextAction, questions: [] }
     }
 
     // Play base64 audio
@@ -618,6 +659,29 @@ export default function VoiceAgent() {
                     }}>
                         CONVERSATION ANALYSIS
                     </div>
+
+                    {/* Summary */}
+                    {analysis.summary && (
+                        <div style={{
+                            padding: '12px 14px',
+                            marginBottom: '14px',
+                            border: '1px solid var(--border, #222)',
+                            background: 'var(--bg-raised, #111)',
+                            borderRadius: '4px'
+                        }}>
+                            <div style={{ ...labelStyle, marginBottom: '6px' }}>SUMMARY</div>
+                            <div style={{
+                                fontSize: '13px',
+                                fontWeight: 500,
+                                lineHeight: 1.6,
+                                color: 'var(--text-secondary, #bbb)',
+                                whiteSpace: 'pre-wrap'
+                            }}>
+                                {analysis.summary}
+                            </div>
+                        </div>
+                    )}
+
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                         <div>
                             <div style={labelStyle}>INTEREST</div>

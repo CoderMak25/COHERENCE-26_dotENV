@@ -212,10 +212,10 @@ export default function Dashboard() {
                             ))}
                         </div>
                     </div>
-                    <div className="flex-1 relative border-l-2 border-[var(--border-bright)] border-b-2 pb-6 pl-2 flex items-end gap-1.5" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 19%, var(--border) 20%)' }}>
-                        <div className="absolute -left-8 bottom-0 text-[10px] font-bold text-[var(--text-muted)]">0</div>
-                        <div className="absolute -left-9 top-[50%] text-[10px] font-bold text-[var(--text-muted)]">{Math.round(maxChart / 2)}</div>
-                        <div className="absolute -left-9 top-0 text-[10px] font-bold text-[var(--text-muted)]">{maxChart}</div>
+                    <div className="flex-1 relative border-l-2 border-[var(--border-bright)] border-b-2 pb-6 pl-10 flex items-end gap-1.5" style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 19%, var(--border) 20%)' }}>
+                        <div className="absolute left-1 bottom-0 text-[10px] font-bold text-[var(--text-muted)]">0</div>
+                        <div className="absolute left-1 top-[50%] text-[10px] font-bold text-[var(--text-muted)]">{Math.round(maxChart / 2)}</div>
+                        <div className="absolute left-1 top-0 text-[10px] font-bold text-[var(--text-muted)]">{maxChart}</div>
                         {chartData.map((day, i) => {
                             const heightPct = maxChart > 0 ? (day.value / maxChart) * 100 : 0
                             return (
