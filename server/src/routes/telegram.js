@@ -83,4 +83,58 @@ router.post('/test-send', async (req, res) => {
     }
 })
 
+// ── POST /api/telegram/start-bot — spawn python bot.py ──
+import { spawn } from 'child_process'
+
+let botProcess = null
+
+router.post('/start-bot', (req, res) => {
+    // If bot is already running, just return OK
+    if (botProcess && !botProcess.killed) {
+        return res.json({ status: 'already_running', pid: botProcess.pid })
+    }
+
+    const botDir = path.resolve(__dirname, '..', '..', '..', 'telegram_bot')
+    const botScript = path.join(botDir, 'bot.py')
+
+    try {
+        botProcess = spawn('python', [botScript], {
+            cwd: botDir,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            detached: false,
+        })
+
+        botProcess.stdout.on('data', (data) => {
+            console.log(`[TelegramBot] ${data.toString().trim()}`)
+        })
+
+        botProcess.stderr.on('data', (data) => {
+            const line = data.toString().trim()
+            if (line && !line.includes('INFO')) {
+                console.error(`[TelegramBot] ${line}`)
+            }
+        })
+
+        botProcess.on('exit', (code) => {
+            console.log(`[TelegramBot] Process exited with code ${code}`)
+            botProcess = null
+        })
+
+        botProcess.on('error', (err) => {
+            console.error(`[TelegramBot] Spawn error: ${err.message}`)
+            botProcess = null
+        })
+
+        res.json({ status: 'started', pid: botProcess.pid })
+    } catch (err) {
+        res.json({ status: 'failed', error: err.message })
+    }
+})
+
+// ── GET /api/telegram/bot-status — check if bot is running ──
+router.get('/bot-status', (req, res) => {
+    const running = botProcess && !botProcess.killed
+    res.json({ running, pid: running ? botProcess.pid : null })
+})
+
 export default router

@@ -2361,6 +2361,24 @@ body {
   border-color: var(--border-bright);
 }
 
+.wf-lead-filter-count {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 4px;
+  font-size: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+.wf-lead-status-btn.active .wf-lead-filter-count {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.wf-lead-badge.replied {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .wf-lead-select-all {
   display: flex;
   align-items: center;
