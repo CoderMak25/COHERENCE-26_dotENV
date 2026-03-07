@@ -102,9 +102,9 @@ export const NODE_DEFS = {
   ai_generate: {
     type: 'ai_generate', label: 'AI Write', category: 'ai',
     tag: 'AI', description: 'Generate message with LLM',
-    defaultConfig: { model: 'claude-sonnet', tone: 'professional', prompt: '', maxTokens: 500 },
+    defaultConfig: { model: 'groq-ai', tone: 'professional', prompt: '', maxTokens: 500 },
     inputs: 1, outputs: [{ id: 'out', label: '' }],
-    getPreview: (c) => `${c.model || 'claude-sonnet'} · ${c.tone || 'professional'}`,
+    getPreview: (c) => `groq-ai · ${c.tone || 'professional'}`,
   },
   ai_score: {
     type: 'ai_score', label: 'AI Lead Score', category: 'ai',

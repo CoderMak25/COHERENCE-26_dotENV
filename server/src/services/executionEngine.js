@@ -2,7 +2,7 @@ import Lead from '../models/Lead.js'
 import Workflow from '../models/Workflow.js'
 import Campaign from '../models/Campaign.js'
 import Log from '../models/Log.js'
-import { generateMessage, generateOutreachMessage } from './aiService.js'
+import { generateMessage, generateOutreachMessage, generateCustomPromptMessage } from './aiService.js'
 import { sendEmail } from './emailService.js'
 import { validateAndRoute } from './leadValidator.js'
 import { outreachQueue } from '../queues/outreachQueue.js'
@@ -300,32 +300,52 @@ async function handleTrigger(node, ctx, send) {
 async function handleAiGenerate(node, ctx, send) {
     const lead = ctx.lead
     const config = node.config || {}
+    const customPrompt = (config.prompt || '').trim()
+    const tone = config.tone || 'professional'
+    const maxTokens = parseInt(config.maxTokens) || 512
 
-    // Determine prompt key based on lead's outreach history
-    const logs = await Log.find({ leadId: lead._id, direction: 'sent' })
-    const sentSteps = logs.map(l => l.step).filter(Boolean)
-
-    let promptKey = 'initial_outreach'
-    if (sentSteps.includes('initial_outreach') && !sentSteps.includes('follow_up'))
-        promptKey = 'follow_up'
-    else if (sentSteps.includes('follow_up') && !sentSteps.includes('final_reminder'))
-        promptKey = 'final_reminder'
-
-    send('log', { tag: 'AI', message: `Generating ${promptKey} message for ${lead.name}...` })
-
-    const message = await generateOutreachMessage(promptKey, {
+    const leadData = {
         name: lead.name || 'there',
         company: lead.company || '',
         position: lead.position || '',
         industry: lead.industry || '',
-    })
+    }
+
+    let message
+    let promptKey = 'initial_outreach'
+
+    if (customPrompt) {
+        // User provided a custom prompt in AI Write config — use it
+        send('log', { tag: 'AI', message: `Groq AI generating message for ${lead.name} (custom prompt, ${tone} tone)...` })
+        message = await generateCustomPromptMessage(customPrompt, leadData, tone, maxTokens)
+
+        // Still determine promptKey for subject line and lead status tracking
+        const logs = await Log.find({ leadId: lead._id, direction: 'sent' })
+        const sentSteps = logs.map(l => l.step).filter(Boolean)
+        if (sentSteps.includes('initial_outreach') && !sentSteps.includes('follow_up'))
+            promptKey = 'follow_up'
+        else if (sentSteps.includes('follow_up') && !sentSteps.includes('final_reminder'))
+            promptKey = 'final_reminder'
+    } else {
+        // No custom prompt — use step-based outreach prompt
+        const logs = await Log.find({ leadId: lead._id, direction: 'sent' })
+        const sentSteps = logs.map(l => l.step).filter(Boolean)
+
+        if (sentSteps.includes('initial_outreach') && !sentSteps.includes('follow_up'))
+            promptKey = 'follow_up'
+        else if (sentSteps.includes('follow_up') && !sentSteps.includes('final_reminder'))
+            promptKey = 'final_reminder'
+
+        send('log', { tag: 'AI', message: `Groq AI generating ${promptKey} message for ${lead.name} (${tone} tone)...` })
+        message = await generateOutreachMessage(promptKey, leadData)
+    }
 
     // Store in context for Send Email to use
     ctx.aiMessage = message
     ctx.promptKey = promptKey
     ctx.emailSubject = getSubject(promptKey, lead)
 
-    send('log', { tag: 'AI', message: `Message generated (${message.length} chars)` })
+    send('log', { tag: 'AI', message: `✓ Message generated (${message.length} chars)` })
     return { port: 0 }
 }
 

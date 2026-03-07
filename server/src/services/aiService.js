@@ -156,3 +156,46 @@ export const generateOutreachMessage = async (step, leadData) => {
 
     return await chatComplete(systemPrompt, userPrompt)
 }
+
+
+// ── Custom prompt message generation (used by AI Write node) ──
+export const generateCustomPromptMessage = async (customPrompt, leadData, tone = 'professional', maxTokens = 512) => {
+    // Replace template variables in the user's prompt
+    const filledPrompt = customPrompt
+        .replace(/\{\{first_name\}\}/g, (leadData.name || 'there').split(' ')[0])
+        .replace(/\{\{name\}\}/g, leadData.name || 'there')
+        .replace(/\{\{company\}\}/g, leadData.company || '')
+        .replace(/\{\{role\}\}/g, leadData.position || '')
+        .replace(/\{\{position\}\}/g, leadData.position || '')
+        .replace(/\{\{industry\}\}/g, leadData.industry || '')
+        .replace(/\{\{pain_point\}\}/g, leadData.painPoint || 'improving efficiency')
+        .replace(/\{\{sender_name\}\}/g, leadData.senderName || 'our team')
+
+    const systemPrompt = `You are a professional sales outreach assistant. Tone: ${tone}. Write concise, personalized messages. Output only the message body, nothing else.`
+
+    const userPrompt = `
+${filledPrompt}
+
+Lead Information:
+Name: ${leadData.name || 'there'}
+${leadData.company ? `Company: ${leadData.company}` : ''}
+${leadData.position ? `Role: ${leadData.position}` : ''}
+${leadData.industry ? `Industry: ${leadData.industry}` : ''}
+
+Rules:
+- Keep the message under 100 words.
+- Personalize using the lead info above. If info is missing, skip it naturally.
+- Output ONLY the message body. No subject line. No sign-off placeholder.
+`
+
+    const response = await getClient().chat.completions.create({
+        model: MODEL,
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: maxTokens,
+    })
+    return response.choices[0]?.message?.content?.trim() || ''
+}

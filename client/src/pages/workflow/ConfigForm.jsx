@@ -298,12 +298,9 @@ export default function ConfigForm({ nodeType, config: initialConfig, onSave, co
             <>
                 <VarHint />
                 <Field label="MODEL">
-                    <Select value={config.model || 'claude-sonnet'} onChange={(v) => set('model', v)}
+                    <Select value={config.model || 'groq-ai'} onChange={(v) => set('model', v)}
                         options={[
-                            { value: 'claude-sonnet', label: 'Claude Sonnet' },
-                            { value: 'claude-opus', label: 'Claude Opus' },
-                            { value: 'gpt-4o', label: 'GPT-4o' },
-                            { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+                            { value: 'groq-ai', label: 'Groq AI (Llama 3.1)' },
                         ]} />
                 </Field>
                 <Field label="TONE">
@@ -312,7 +309,7 @@ export default function ConfigForm({ nodeType, config: initialConfig, onSave, co
                 </Field>
                 <Field label="PROMPT">
                     <textarea className="wf-form-textarea" rows={4} value={config.prompt || ''} onChange={(e) => set('prompt', e.target.value)}
-                        placeholder="Write a cold outreach for {{first_name}}..." />
+                        placeholder="Write a follow-up email for {{first_name}} at {{company}}..." />
                 </Field>
                 <Field label="MAX TOKENS">
                     <input className="wf-form-input" type="number" value={config.maxTokens || 500} onChange={(e) => set('maxTokens', parseInt(e.target.value) || 500)} />
