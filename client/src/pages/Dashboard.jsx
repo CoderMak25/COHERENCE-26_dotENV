@@ -92,7 +92,7 @@ export default function Dashboard() {
 
     const pipeline = [
         { stage: 'NEW', count: p.new || 0, pct: totalLeads ? Math.round((p.new / totalLeads) * 100) : 0 },
-        { stage: 'CONTACTED', count: p.contacted || 0, pct: totalLeads ? Math.round((p.contacted / totalLeads) * 100) : 0, active: true },
+        { stage: 'CONTACTED', count: p.contacted || 0, pct: totalLeads ? Math.round((p.contacted / totalLeads) * 100) : 0 },
         { stage: 'OPENED', count: p.opened || 0, pct: totalLeads ? Math.round((p.opened / totalLeads) * 100) : 0 },
         { stage: 'REPLIED', count: p.replied || 0, pct: totalLeads ? Math.round((p.replied / totalLeads) * 100) : 0 },
         { stage: 'CONVERTED', count: p.converted || 0, pct: totalLeads ? Math.round((p.converted / totalLeads) * 100) : 0 },
