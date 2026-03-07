@@ -56,7 +56,7 @@ const leadSchema = new mongoose.Schema({
 
     // Lead Scoring
     score: { type: Number, default: 0, min: 0, max: 100 },
-    scoreLabel: { type: String, enum: ['HOT', 'WARM', 'COLD'], default: 'COLD' },
+    scoreLabel: { type: String, enum: ['HOT', 'QUALIFIED', 'WARM', 'COLD'], default: 'COLD' },
     engagementHistory: [{ type: { type: String }, time: { type: Date, default: Date.now } }],
 
     metadata: { type: Map, of: String },

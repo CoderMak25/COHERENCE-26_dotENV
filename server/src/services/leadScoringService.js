@@ -1,128 +1,201 @@
 /**
- * Lead Scoring Service
+ * Lead Scoring Engine
  * 
- * Pure functions — no side effects, no DB imports.
- * Calculates a lead score between 0–100 from static profile data + engagement events.
+ * Strict scoring system (0–100).
+ * Score = Profile Score (max 50) + Behavior Score (max 40) − Penalties (max −30)
+ * Only highly qualified leads reach scores above 80.
  */
 
-// ─── ROLE SCORING ────────────────────────────────────────────────────
-const ROLE_KEYWORDS = [
-    { keywords: ['ceo', 'founder', 'co-founder', 'owner', 'president'], points: 30 },
-    { keywords: ['vp', 'vice president', 'director', 'cto', 'cfo', 'cmo', 'coo', 'chief'], points: 25 },
-    { keywords: ['manager', 'head', 'lead', 'senior'], points: 20 },
-    { keywords: ['engineer', 'specialist', 'analyst', 'developer', 'designer', 'architect', 'scientist', 'researcher', 'strategist'], points: 10 },
-    { keywords: ['intern', 'trainee', 'assistant', 'junior'], points: 3 },
+// ─── ROLE SCORE (max 20) ────────────────────────────────────────────
+const ROLE_TIERS = [
+    { keywords: ['ceo', 'founder', 'co-founder', 'owner', 'president', 'chief'], points: 20 },
+    { keywords: ['vp', 'vice president', 'director', 'cto', 'cfo', 'cmo', 'coo'], points: 15 },
+    { keywords: ['manager', 'head', 'lead', 'team lead'], points: 10 },
+    {
+        keywords: ['engineer', 'specialist', 'analyst', 'developer', 'designer', 'architect',
+            'scientist', 'researcher', 'strategist', 'coordinator', 'associate',
+            'consultant', 'executive', 'representative', 'officer'], points: 5
+    },
 ]
 
 function roleScore(position) {
-    if (!position) return 3
+    if (!position) return 0
     const lower = position.toLowerCase()
-    for (const tier of ROLE_KEYWORDS) {
+    for (const tier of ROLE_TIERS) {
         if (tier.keywords.some(k => lower.includes(k))) return tier.points
     }
-    return 3
+    return 0 // Unknown role = 0
 }
 
-// ─── COMPANY SIZE SCORING ────────────────────────────────────────────
+// ─── COMPANY SIZE SCORE (max 10) ────────────────────────────────────
+// We estimate company size from the company name since we don't store employee count.
 const ENTERPRISE_COMPANIES = [
     'google', 'microsoft', 'apple', 'amazon', 'meta', 'tesla', 'ibm',
     'oracle', 'intel', 'nvidia', 'adobe', 'salesforce', 'linkedin',
-    'netflix', 'uber', 'paypal', 'stripe'
+    'netflix', 'uber', 'paypal', 'stripe', 'walmart', 'jpmorgan',
+    'goldman', 'deloitte', 'accenture', 'infosys', 'tcs', 'wipro',
+    'samsung', 'sony', 'cisco', 'dell', 'hp', 'sap'
 ]
-const MIDSIZE_KEYWORDS = ['mid-market', 'mid-size', 'midsize', 'ltd', 'inc', 'corp']
-const STARTUP_KEYWORDS = ['startup', 'stealth', 'innovate', 'labs', 'ventures']
+const MIDSIZE_KEYWORDS = ['ltd', 'inc', 'corp', 'limited', 'group', 'global', 'international']
+const STARTUP_KEYWORDS = ['startup', 'stealth', 'labs', 'ventures', 'studio', 'ai', 'io']
 
-function companyScore(company) {
-    if (!company) return 5
+function companySizeScore(company) {
+    if (!company) return 1
     const lower = company.toLowerCase()
-    if (ENTERPRISE_COMPANIES.some(c => lower.includes(c))) return 25
-    if (STARTUP_KEYWORDS.some(k => lower.includes(k))) return 10
-    if (MIDSIZE_KEYWORDS.some(k => lower.includes(k))) return 15
-    return 10 // default to startup-level if unknown
+    if (ENTERPRISE_COMPANIES.some(c => lower.includes(c))) return 10   // 1000+ employees
+    if (MIDSIZE_KEYWORDS.some(k => lower.includes(k))) return 8        // 200–1000
+    if (STARTUP_KEYWORDS.some(k => lower.includes(k))) return 3        // 10–50
+    return 6 // Default: assume mid-size (50–200)
 }
 
-// ─── INDUSTRY MATCH SCORING ─────────────────────────────────────────
+// ─── INDUSTRY MATCH SCORE (max 10) ──────────────────────────────────
+const TARGET_INDUSTRIES = ['tech', 'technology', 'saas', 'software', 'it', 'ai', 'cloud']
+const RELATED_INDUSTRIES = ['fintech', 'finance', 'banking', 'ecommerce', 'e-commerce',
+    'digital', 'data', 'analytics', 'consulting', 'telecom']
+
 function industryScore(industry) {
-    if (!industry) return 5
+    if (!industry) return 3 // Neutral — unknown
     const lower = industry.toLowerCase()
-    if (lower.includes('tech') || lower === 'saas' || lower === 'software') return 20
-    if (lower.includes('finance') || lower.includes('fintech') || lower.includes('banking')) return 15
-    return 8
+    if (TARGET_INDUSTRIES.some(k => lower.includes(k))) return 10
+    if (RELATED_INDUSTRIES.some(k => lower.includes(k))) return 6
+    return 3 // Neutral
 }
 
-// ─── CONTACT QUALITY SCORING ────────────────────────────────────────
+// ─── CONTACT QUALITY SCORE (max 10) ─────────────────────────────────
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function contactScore(email, linkedinUrl) {
-    const hasValidEmail = email && EMAIL_REGEX.test(email)
+function contactQualityScore(email, linkedinUrl, phone) {
+    const hasEmail = email && EMAIL_REGEX.test(email)
     const hasLinkedin = linkedinUrl && linkedinUrl.length > 5
+    const hasPhone = phone && phone.length > 5
 
-    if (hasValidEmail && hasLinkedin) return 15
-    if (hasValidEmail) return 10
-    if (hasLinkedin) return 6
-    return 0
+    if (hasEmail && hasLinkedin) return 10   // Verified email + LinkedIn
+    if (hasEmail) return 7                   // Verified email only
+    if (hasPhone) return 5                   // Phone only
+    if (hasLinkedin) return 5                // LinkedIn only (treated like phone)
+    return 2                                 // Unverified contact
 }
 
-// ─── LOCATION RELEVANCE SCORING ─────────────────────────────────────
-const TARGET_REGIONS = ['usa', 'us', 'united states', 'canada', 'uk', 'united kingdom', 'india']
-
-function locationScore(location) {
-    if (!location) return 5
-    const lower = location.toLowerCase()
-    if (TARGET_REGIONS.some(r => lower.includes(r))) return 10
-    return 5
+// ─── BEHAVIOR SCORE (max 40) ────────────────────────────────────────
+const BEHAVIOR_POINTS = {
+    email_open: 2,       // max 10 pts (5 opens)
+    link_click: 5,       // max 15 pts (3 clicks)
+    reply_received: 15,  // one-time
+    demo_request: 20,    // one-time
 }
 
-// ─── ENGAGEMENT SCORE ───────────────────────────────────────────────
-const ENGAGEMENT_DELTAS = {
-    email_sent: 0,
+const BEHAVIOR_CAPS = {
     email_open: 10,
-    link_click: 20,
-    reply_received: 40,
-    ignored: -5,
-    negative_reply: -999, // sentinel: score becomes 0
+    link_click: 15,
+    reply_received: 15,
+    demo_request: 20,
 }
 
-function engagementScore(engagementHistory) {
+function behaviorScore(engagementHistory) {
     if (!engagementHistory || engagementHistory.length === 0) return 0
-    let total = 0
+
+    const totals = {}
     for (const event of engagementHistory) {
-        const delta = ENGAGEMENT_DELTAS[event.type]
-        if (delta === -999) return -999 // negative reply → score becomes 0
-        if (typeof delta === 'number') total += delta
+        const type = event.type
+        if (!BEHAVIOR_POINTS[type]) continue
+        totals[type] = (totals[type] || 0) + BEHAVIOR_POINTS[type]
     }
-    return total
+
+    let score = 0
+    for (const [type, points] of Object.entries(totals)) {
+        const cap = BEHAVIOR_CAPS[type] || 0
+        score += Math.min(points, cap)
+    }
+    return score
+}
+
+// ─── PENALTY SCORE (max −30) ────────────────────────────────────────
+const PENALTY_VALUES = {
+    no_response: -10,
+    email_bounced: -20,
+    unsubscribe: -30,
+    inactive_30d: -10,
+    negative_reply: -30,
+    ignored: -5,
+}
+
+function penaltyScore(engagementHistory, lead) {
+    let penalty = 0
+
+    // Event-based penalties
+    if (engagementHistory && engagementHistory.length > 0) {
+        for (const event of engagementHistory) {
+            const p = PENALTY_VALUES[event.type]
+            if (p && p < 0) penalty += p
+        }
+    }
+
+    // Status-based penalties
+    if (lead.contactStatus === 'email_bounced') penalty += -20
+    if (lead.status === 'Unsubscribed' || lead.status === 'unsubscribed') penalty += -30
+    if (lead.status === 'invalid_no_contact') penalty += -10
+
+    // Inactivity penalty: no engagement in 30 days
+    if (lead.lastContactedAt) {
+        const daysSince = (Date.now() - new Date(lead.lastContactedAt).getTime()) / (1000 * 60 * 60 * 24)
+        if (daysSince > 30) penalty += -10
+    }
+
+    return Math.max(penalty, -30) // Cap at −30
 }
 
 // ─── MAIN SCORING FUNCTION ──────────────────────────────────────────
 
 export function calculateLeadScore(lead) {
-    const staticTotal =
+    const profile = Math.min(
         roleScore(lead.position) +
-        companyScore(lead.company) +
+        companySizeScore(lead.company) +
         industryScore(lead.industry) +
-        contactScore(lead.email, lead.linkedinUrl) +
-        locationScore(lead.location || (lead.tags && lead.tags.find(t => TARGET_REGIONS.some(r => t.toLowerCase().includes(r)))))
+        contactQualityScore(lead.email, lead.linkedinUrl, lead.phone),
+        50
+    )
 
-    const engTotal = engagementScore(lead.engagementHistory)
+    const behavior = Math.min(behaviorScore(lead.engagementHistory), 40)
+    const penalty = penaltyScore(lead.engagementHistory, lead)
 
-    // Negative reply → instant 0
-    if (engTotal === -999) return 0
+    const raw = profile + behavior + penalty
+    return Math.min(Math.max(raw, 0), 100)
+}
 
-    return Math.min(Math.max(staticTotal + engTotal, 0), 100)
+export function calculateLeadScoreDetailed(lead) {
+    const profile = Math.min(
+        roleScore(lead.position) +
+        companySizeScore(lead.company) +
+        industryScore(lead.industry) +
+        contactQualityScore(lead.email, lead.linkedinUrl, lead.phone),
+        50
+    )
+    const behavior = Math.min(behaviorScore(lead.engagementHistory), 40)
+    const penalty = penaltyScore(lead.engagementHistory, lead)
+    const raw = profile + behavior + penalty
+    const lead_score = Math.min(Math.max(raw, 0), 100)
+
+    return {
+        lead_score,
+        profile_score: profile,
+        behavior_score: behavior,
+        penalty_score: penalty,
+        category: getScoreLabel(lead_score),
+    }
 }
 
 export function getScoreLabel(score) {
-    if (score >= 80) return 'HOT'
-    if (score >= 50) return 'WARM'
+    if (score >= 81) return 'HOT'
+    if (score >= 61) return 'QUALIFIED'
+    if (score >= 31) return 'WARM'
     return 'COLD'
 }
 
 export function getNextAction(score, status) {
-    if (score >= 80) return 'Priority Follow-up'
-    if (score >= 50) return 'Standard Outreach'
-    if (score >= 30) return 'Nurture Sequence'
-    return 'Low Priority'
+    if (score >= 81) return 'Priority Follow-up'
+    if (score >= 61) return 'Qualified — Schedule Demo'
+    if (score >= 31) return 'Standard Outreach'
+    return 'Low Priority — Nurture'
 }
 
 /**

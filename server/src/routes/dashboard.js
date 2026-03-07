@@ -61,19 +61,20 @@ router.get('/stats', async (req, res) => {
             { $group: { _id: '$workflow', count: { $sum: 1 } } }
         ])
 
-        // --- Lead scoring stats ---
+        // --- Lead scoring stats (4-tier) ---
         const scoringAgg = await Lead.aggregate([
             {
                 $group: {
                     _id: null,
                     avgScore: { $avg: '$score' },
-                    hot: { $sum: { $cond: [{ $gte: ['$score', 80] }, 1, 0] } },
-                    warm: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 50] }, { $lt: ['$score', 80] }] }, 1, 0] } },
-                    cold: { $sum: { $cond: [{ $lt: ['$score', 50] }, 1, 0] } },
+                    hot: { $sum: { $cond: [{ $gte: ['$score', 81] }, 1, 0] } },
+                    qualified: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 61] }, { $lt: ['$score', 81] }] }, 1, 0] } },
+                    warm: { $sum: { $cond: [{ $and: [{ $gte: ['$score', 31] }, { $lt: ['$score', 61] }] }, 1, 0] } },
+                    cold: { $sum: { $cond: [{ $lt: ['$score', 31] }, 1, 0] } },
                 }
             }
         ])
-        const scoring = scoringAgg[0] || { avgScore: 0, hot: 0, warm: 0, cold: 0 }
+        const scoring = scoringAgg[0] || { avgScore: 0, hot: 0, qualified: 0, warm: 0, cold: 0 }
 
         res.json({
             totalLeads,
@@ -86,6 +87,7 @@ router.get('/stats', async (req, res) => {
             workflowCounts,
             scoring: {
                 hot: scoring.hot,
+                qualified: scoring.qualified,
                 warm: scoring.warm,
                 cold: scoring.cold,
                 avgScore: Math.round(scoring.avgScore || 0)

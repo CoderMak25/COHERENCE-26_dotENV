@@ -75,11 +75,12 @@ export default function Dashboard() {
     const maxChart = Math.max(...chartData.map(d => d.value), 1)
     const topLeads = stats?.topLeads || []
     const workflowCounts = stats?.workflowCounts || []
-    const scoring = stats?.scoring || { hot: 0, warm: 0, cold: 0, avgScore: 0 }
+    const scoring = stats?.scoring || { hot: 0, qualified: 0, warm: 0, cold: 0, avgScore: 0 }
 
     const getScoreColor = (score) => {
-        if (score >= 80) return 'var(--danger)'
-        if (score >= 50) return 'var(--warning, #d4a72c)'
+        if (score >= 81) return 'var(--danger)'
+        if (score >= 61) return 'var(--accent, #e07a2f)'
+        if (score >= 31) return 'var(--warning, #d4a72c)'
         return 'var(--text-muted)'
     }
 
@@ -178,6 +179,7 @@ export default function Dashboard() {
                     <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">SCORING</span>
                     <span className="text-[var(--border-bright)]">|</span>
                     <span className="text-[11px] font-bold" style={{ color: 'var(--danger)' }}>● HOT {scoring.hot}</span>
+                    <span className="text-[11px] font-bold" style={{ color: 'var(--accent, #e07a2f)' }}>● QUALIFIED {scoring.qualified}</span>
                     <span className="text-[11px] font-bold" style={{ color: 'var(--warning, #d4a72c)' }}>● WARM {scoring.warm}</span>
                     <span className="text-[11px] font-bold text-[var(--text-muted)]">● COLD {scoring.cold}</span>
                     <span className="text-[var(--border-bright)] ml-auto">|</span>

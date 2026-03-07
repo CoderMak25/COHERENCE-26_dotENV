@@ -33,11 +33,20 @@ try {
 export const sendEmail = async ({ to, subject, body, from, threadId }) => {
     const start = Date.now()
 
+    // Append Telegram Bot link
+    const telegramUsername = 'OutreachXbot' // Discovered from Telegram API query
+    const telegramFooterText = `\n\n---\n💬 Ask me anything instantly! Chat with our AI assistant on Telegram: https://t.me/${telegramUsername}`
+    const telegramFooterHtml = `<br><br><hr><p style="color: #666; font-size: 14px;">💬 Ask me anything instantly! <a href="https://t.me/${telegramUsername}" target="_blank">Chat with our AI assistant on Telegram</a></p>`
+
+    const finalBody = body + telegramFooterText
+    const finalHtml = `<div style="font-family: sans-serif">${body.replace(/\n/g, '<br>')}</div>` + telegramFooterHtml
+
+
     // ── Try Gmail API first ──
     try {
         const status = await getConnectionStatus()
         if (status.connected) {
-            const result = await sendViaGmailAPI({ to, subject, body, from, threadId })
+            const result = await sendViaGmailAPI({ to, subject, body: finalBody, from, threadId })
             console.log(`[EmailService] Sent via Gmail API to ${to} (thread: ${result.threadId})`)
             return {
                 success: true,
@@ -67,8 +76,8 @@ export const sendEmail = async ({ to, subject, body, from, threadId }) => {
             from: from || process.env.EMAIL_FROM,
             to,
             subject,
-            text: body,
-            html: `<div style="font-family: sans-serif">${body.replace(/\n/g, '<br>')}</div>`
+            text: finalBody,
+            html: finalHtml
         })
         console.log(`[EmailService] Sent via SMTP to ${to}`)
         return { success: true, latencyMs: Date.now() - start, method: 'smtp' }
