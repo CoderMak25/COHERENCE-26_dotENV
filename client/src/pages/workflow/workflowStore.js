@@ -687,8 +687,25 @@ const useWorkflowStore = create((set, get) => ({
         const time = () => new Date().toLocaleTimeString('en-US', { hour12: false })
         get().appendLog({ time: time(), tag: 'SYS', message: 'Sending workflow graph to backend...' })
 
-        // Build workflow payload from canvas nodes/edges
+        // Auto-start Telegram bot if workflow contains a send_telegram node
         const { nodes, edges, selectedLeadIds } = get()
+        const hasTelegram = nodes.some(n => n.data?.nodeType === 'send_telegram')
+        if (hasTelegram) {
+            try {
+                get().appendLog({ time: time(), tag: 'TG', message: '🤖 Starting Telegram bot...' })
+                const botRes = await fetch('http://localhost:5000/api/telegram/start-bot', { method: 'POST' })
+                const botData = await botRes.json()
+                if (botData.status === 'started') {
+                    get().appendLog({ time: time(), tag: 'TG', message: `✅ Telegram bot started (PID: ${botData.pid})` })
+                } else if (botData.status === 'already_running') {
+                    get().appendLog({ time: time(), tag: 'TG', message: `✅ Telegram bot already running (PID: ${botData.pid})` })
+                } else {
+                    get().appendLog({ time: time(), tag: 'TG', message: `⚠️ Bot start: ${botData.error || botData.status}` })
+                }
+            } catch (err) {
+                get().appendLog({ time: time(), tag: 'ERR', message: `Bot start failed: ${err.message}` })
+            }
+        }
         const payload = {
             workflow: {
                 nodes: nodes.map(n => ({
@@ -701,6 +718,7 @@ const useWorkflowStore = create((set, get) => ({
                     id: e.id,
                     from: e.source,
                     to: e.target,
+                    sourceHandle: e.sourceHandle || null,
                     fromPort: e.sourceHandle || '0',
                 })),
             },
