@@ -2008,6 +2008,115 @@ body {
 }
 
 /* ── Empty State ── */
+/* ── AI Prompt Bar ── */
+.wf-ai-prompt-container {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+.wf-ai-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-surface);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(200, 255, 0, 0.15);
+  font-family: 'Syne', sans-serif;
+}
+
+.wf-ai-trigger-btn:hover {
+  background: var(--accent);
+  color: var(--bg-base);
+  box-shadow: 0 0 30px rgba(200, 255, 0, 0.3);
+}
+
+.wf-ai-prompt-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-bright);
+  min-width: 550px;
+  max-width: 750px;
+  backdrop-filter: blur(8px);
+  position: relative;
+}
+
+.wf-ai-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.wf-ai-input::placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.wf-ai-gen-btn {
+  padding: 6px 16px;
+  background: var(--accent);
+  color: var(--bg-base);
+  border: none;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Syne', sans-serif;
+}
+
+.wf-ai-gen-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.wf-ai-gen-btn:not(:disabled):hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 12px rgba(200, 255, 0, 0.3);
+}
+
+.wf-ai-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s;
+}
+
+.wf-ai-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.wf-ai-error {
+  position: absolute;
+  bottom: -28px;
+  left: 16px;
+  right: 16px;
+  font-size: 10px;
+  color: var(--danger);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
 .wf-empty-state {
   position: absolute;
   top: 50%;

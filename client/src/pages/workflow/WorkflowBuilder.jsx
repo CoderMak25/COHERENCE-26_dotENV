@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useMemo } from 'react'
+import { useCallback, useEffect, useRef, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Icon } from '@iconify/react'
 import ReactFlow, {
     Background,
     MiniMap,
@@ -26,6 +27,73 @@ import LeadPickerModal from './LeadPickerModal'
 const nodeTypes = { workflowNode: WorkflowNodeComp }
 const edgeTypes = { workflowEdge: WorkflowEdgeComp }
 
+// ── AI Prompt Bar Component ──
+function AiPromptBar() {
+    const [open, setOpen] = useState(false)
+    const [prompt, setPrompt] = useState('')
+    const [error, setError] = useState('')
+    const aiGenerating = useWorkflowStore(s => s.aiGenerating)
+    const aiGenerateWorkflow = useWorkflowStore(s => s.aiGenerateWorkflow)
+    const inputRef = useRef(null)
+
+    useEffect(() => {
+        if (open && inputRef.current) inputRef.current.focus()
+    }, [open])
+
+    const handleGenerate = async () => {
+        if (!prompt.trim() || aiGenerating) return
+        setError('')
+        try {
+            await aiGenerateWorkflow(prompt.trim())
+            setPrompt('')
+            setOpen(false)
+        } catch (err) {
+            setError(err.message || 'Failed to generate workflow')
+        }
+    }
+
+    return (
+        <div className="wf-ai-prompt-container">
+            {!open ? (
+                <button
+                    className="wf-ai-trigger-btn"
+                    onClick={() => setOpen(true)}
+                    title="Generate workflow with AI"
+                >
+                    <Icon icon="solar:magic-stick-3-bold" className="text-lg" />
+                    <span>AI Generate</span>
+                </button>
+            ) : (
+                <div className="wf-ai-prompt-bar">
+                    <Icon icon="solar:magic-stick-3-bold" className="text-lg text-[var(--accent)]" />
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        className="wf-ai-input"
+                        placeholder="Describe your workflow... e.g. 'Send email, if opened send LinkedIn DM, else wait 3 days and follow up'"
+                        value={prompt}
+                        onChange={e => setPrompt(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleGenerate()}
+                        disabled={aiGenerating}
+                    />
+                    {aiGenerating ? (
+                        <Icon icon="svg-spinners:ring-resize" className="text-lg text-[var(--accent)]" />
+                    ) : (
+                        <>
+                            <button className="wf-ai-gen-btn" onClick={handleGenerate} disabled={!prompt.trim()}>
+                                GENERATE
+                            </button>
+                            <button className="wf-ai-close-btn" onClick={() => { setOpen(false); setError('') }}>
+                                <Icon icon="solar:close-square-linear" className="text-lg" />
+                            </button>
+                        </>
+                    )}
+                    {error && <div className="wf-ai-error">{error}</div>}
+                </div>
+            )}
+        </div>
+    )
+}
 function WorkflowCanvas() {
     const reactFlowWrapper = useRef(null)
     const reactFlowInstance = useReactFlow()
@@ -251,11 +319,14 @@ function WorkflowCanvas() {
 
             <FloatingToolbar />
 
+            {/* AI Workflow Generator */}
+            <AiPromptBar />
+
             {/* Empty state */}
             {nodes.length === 0 && !running && (
                 <div className="wf-empty-state">
                     <h3 className="wf-empty-title">EMPTY CANVAS</h3>
-                    <p className="wf-empty-sub">Drag nodes from the left panel or press SPACE to search</p>
+                    <p className="wf-empty-sub">Drag nodes from the left panel, press SPACE to search, or use ✨ AI to generate</p>
                 </div>
             )}
 

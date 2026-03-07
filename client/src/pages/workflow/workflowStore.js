@@ -162,6 +162,29 @@ const useWorkflowStore = create((set, get) => ({
     selectedLeadIds: [],
     showLeadSelector: false,
 
+    // ── AI Generation ──
+    aiGenerating: false,
+    aiGenerateWorkflow: async (prompt) => {
+        set({ aiGenerating: true })
+        try {
+            const res = await fetch('http://localhost:5000/api/ai/generate-workflow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt }),
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.error || 'Generation failed')
+            }
+            const { nodes, edges } = await res.json()
+            set({ nodes, edges, aiGenerating: false })
+        } catch (err) {
+            console.error('AI workflow generation error:', err)
+            set({ aiGenerating: false })
+            throw err
+        }
+    },
+
     // ── History ──
     history: [],
     historyIndex: -1,

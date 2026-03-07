@@ -199,3 +199,115 @@ Rules:
     })
     return response.choices[0]?.message?.content?.trim() || ''
 }
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  AI Workflow Graph Generator — text prompt → React Flow JSON
+// ═══════════════════════════════════════════════════════════════════
+
+const WORKFLOW_SYSTEM_PROMPT = `You are an expert workflow automation architect. The user will describe a workflow in plain English. You must output a VALID JSON object (no markdown, no code fences, no explanation) representing a React Flow graph with "nodes" and "edges" arrays.
+
+AVAILABLE NODE TYPES (use ONLY these exact type strings):
+TRIGGERS (inputs: 0, outputs: ["out"]):
+- trigger_new_lead: "New Lead" — fires when a lead is added
+- trigger_form_submit: "Form Submit" — fires on form submission
+- trigger_scheduled: "Scheduled" — cron trigger
+- trigger_webhook: "Webhook" — HTTP POST trigger
+- trigger_manual: "Manual Run" — manually triggered
+
+OUTREACH (inputs: 1, outputs: ["out"]):
+- send_email: "Send Email" — send personalized email
+- send_telegram: "Telegram" — send Telegram message
+- linkedin_dm: "LinkedIn DM" — send LinkedIn message
+- send_sms: "Send SMS" — send SMS
+- whatsapp: "WhatsApp" — send WhatsApp message
+- phone_call: "Phone Call" — log or trigger call
+- slack_alert: "Slack Alert" — internal Slack notification
+
+AI & SMART (inputs: 1, outputs: ["out"]):
+- ai_generate: "AI Write" — generate message with LLM
+- ai_score: "AI Lead Score" — score lead 0-100
+- ai_classify: "AI Classify" — classify intent/sentiment
+- ai_enrich: "AI Enrich" — enrich lead data
+
+LOGIC & FLOW:
+- delay: (inputs: 1, outputs: ["out"]) "Delay" — wait a duration
+- condition: (inputs: 1, outputs: ["yes","no"]) "If / Else" — branch on condition
+- ab_split: (inputs: 1, outputs: ["a","b"]) "A/B Split" — split traffic
+- loop: (inputs: 1, outputs: ["next","done"]) "Loop"
+- merge: (inputs: 1, outputs: ["out"]) "Merge" — merge branches
+- wait_event: (inputs: 1, outputs: ["success","timeout"]) "Wait For Event"
+
+DATA & CRM (inputs: 1, outputs: ["out"]):
+- update_crm: "Update CRM"
+- add_tag: "Add Tag"
+- remove_tag: "Remove Tag"
+- set_field: "Set Field"
+- http_request: "HTTP Request"
+
+SAFETY:
+- throttle: (inputs: 1, outputs: ["out"]) "Throttle" — rate limit
+- unsubscribe_check: (inputs: 1, outputs: ["safe","unsub"]) "Unsub Check"
+- end: (inputs: 1, outputs: []) "End" — end branch
+
+OUTPUT FORMAT (strict JSON, no other text):
+{
+  "nodes": [
+    { "id": "n1", "nodeType": "<type>", "label": "<display name>", "config": {} }
+  ],
+  "edges": [
+    { "source": "n1", "target": "n2", "sourceHandle": "<output port id>" }
+  ]
+}
+
+RULES:
+1. Every workflow MUST start with exactly one trigger node.
+2. Every edge must have a valid "sourceHandle" matching the source node's output port id (e.g. "out", "yes", "no", "success", "timeout", "a", "b", "safe", "unsub").
+3. Node IDs must be unique strings like "n1", "n2", etc.
+4. Keep config objects minimal but logical (e.g. for delay, set min/max/unit).
+5. Output ONLY the JSON object. No markdown, no explanation, no code fences.`
+
+export const generateWorkflowGraph = async (userPrompt) => {
+    const response = await getClient().chat.completions.create({
+        model: MODEL,
+        messages: [
+            { role: 'system', content: WORKFLOW_SYSTEM_PROMPT },
+            { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.4,
+        max_tokens: 2048,
+    })
+
+    const raw = response.choices[0]?.message?.content?.trim() || '{}'
+
+    // Strip markdown fences if the LLM wraps it
+    let cleaned = raw
+    if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/```\s*$/, '')
+    }
+
+    const parsed = JSON.parse(cleaned)
+
+    // Transform into React Flow format with auto-layout (horizontal, left-to-right)
+    const nodes = (parsed.nodes || []).map((n, i) => ({
+        id: n.id,
+        type: 'workflowNode',
+        position: { x: 100 + i * 300, y: 150 + (i % 2 === 0 ? 0 : 60) },
+        data: {
+            nodeType: n.nodeType,
+            label: n.label || n.nodeType,
+            enabled: true,
+            config: n.config || {},
+        },
+    }))
+
+    const edges = (parsed.edges || []).map((e, i) => ({
+        id: `e_${i}_${Date.now().toString(36)}`,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle || 'out',
+        type: 'workflowEdge',
+    }))
+
+    return { nodes, edges }
+}

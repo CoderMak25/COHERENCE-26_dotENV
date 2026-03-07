@@ -1,5 +1,5 @@
 import Lead from '../models/Lead.js'
-import { generateMessage } from '../services/aiService.js'
+import { generateMessage, generateWorkflowGraph } from '../services/aiService.js'
 
 // POST /api/ai/generate
 export const generateAIMessage = async (req, res, next) => {
@@ -21,3 +21,23 @@ export const generateAIMessage = async (req, res, next) => {
         next(err)
     }
 }
+
+// POST /api/ai/generate-workflow
+export const generateWorkflow = async (req, res, next) => {
+    try {
+        const { prompt } = req.body
+        if (!prompt || !prompt.trim()) {
+            return res.status(400).json({ error: 'A workflow description prompt is required' })
+        }
+
+        const result = await generateWorkflowGraph(prompt.trim())
+        res.json(result)
+    } catch (err) {
+        console.error('AI workflow generation error:', err)
+        if (err instanceof SyntaxError) {
+            return res.status(422).json({ error: 'AI returned invalid JSON. Please try a simpler prompt.' })
+        }
+        next(err)
+    }
+}
+
